@@ -1,0 +1,22 @@
+language: rust
+
+dist: bionic
+addons:
+  apt:
+    packages:
+      - libssl-dev
+before_install:
+  - rustup component add clippy
+  - rustup component add rustfmt
+  - bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
+
+cache: cargo
+rust:
+  - stable
+
+script:
+  - cargo clippy
+  - cargo fmt -- --check
+
+after_success:
+  - cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID --exclude-files src/bin/main.rs

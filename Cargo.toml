@@ -1,0 +1,11 @@
+[package]
+name = "git_detective"
+version = "0.1.0"
+authors = ["NickHackman <snickhackman@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+clap = "2.33.0"
+tokei = "11.1.0"
+git2 = "0.13.5"
+tui = { version = "0.9.1", features = ["crossterm"], default-features = false }
