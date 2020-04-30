@@ -1,8 +1,11 @@
+use std::iter::Iterator;
 use std::path::Path;
 
 use git2::Repository;
 
+mod git_reference;
 use crate::error::Error;
+use git_reference::GitReference;
 
 /// A Git Repository
 ///
@@ -29,18 +32,36 @@ impl Repo {
     ///
     /// # Returns
     ///
-    /// Result<Vec<String>>, git2::Error>
-    pub fn branch_names(&self, filter: Option<git2::BranchType>) -> Result<Vec<String>, Error> {
+    /// Result<Iterator<GitReference>>, git2::Error>
+    pub fn branches<'repo>(
+        &self,
+        filter: Option<git2::BranchType>,
+    ) -> Result<impl Iterator<Item = GitReference>, Error> {
         Ok(self
             .repo
             .branches(filter)?
             .flatten()
-            .map(|(branch, _)| {
-                branch
-                    .name_bytes()
-                    .map_or(String::new(), |name| String::from_utf8_lossy(name).into())
+            .map(|(branch, _)| GitReference::Branch(branch)))
+    }
+
+    /// List Commits
+    ///
+    /// # Returns
+    ///
+    /// Iterator<GitReference>
+    pub fn commits(&self) -> impl Iterator<Item = GitReference> {
+        self.repo
+            .revwalk()
+            .into_iter()
+            .flatten()
+            .filter_map(move |id| match id {
+                Ok(id) => self
+                    .repo
+                    .find_commit(id)
+                    .map(|commit| GitReference::Commit(commit))
+                    .ok(),
+                Err(_) => None,
             })
-            .collect())
     }
 
     /// Clones a Repository Recursively
@@ -48,9 +69,9 @@ impl Repo {
     /// # Returns
     ///
     /// Result<Self, git2::Error>
-    pub fn clone<P: AsRef<Path>>(url: &str, path: P) -> Result<Self, Error> {
+    pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> Result<Self, Error> {
         Ok(Self {
-            repo: Repository::clone_recurse(url, path)?,
+            repo: Repository::clone_recurse(url.as_ref(), path)?,
         })
     }
 
@@ -91,12 +112,14 @@ mod git_tests {
         let git = Repo::open(".");
         assert!(git.is_ok());
         let git = git.unwrap();
-        let branches = git.branch_names(None);
+        let branches = git.branches(None);
         assert!(branches.is_ok());
-        let branches = branches.unwrap();
+        let branches: Vec<GitReference> = branches.unwrap().collect();
         assert!(branches.len() > 0);
-        assert!(branches.contains(&"master".to_string()));
-        assert!(branches.contains(&"development".to_string()));
+        let mut branches = git.branches(None).unwrap();
+        assert!(
+            branches.any(|b| b.name().unwrap() == "master" || b.name().unwrap() == "development")
+        );
     }
 
     #[test]
@@ -104,9 +127,9 @@ mod git_tests {
         let path = PathBuf::from("walkdir");
         let git = Repo::clone("https://github.com/BurntSushi/walkdir", &path);
         assert!(git.is_ok());
-        let branches = git.unwrap().branch_names(None).unwrap();
-        assert!(branches.len() > 0);
-        assert!(branches.contains(&"master".to_string()));
+        let git = git.unwrap();
+        let mut branches = git.branches(None).unwrap();
+        assert!(branches.any(|b| b.name().unwrap() == "master"));
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
     }
@@ -117,9 +140,8 @@ mod git_tests {
         let git = Repo::clone("https://github.com/BurntSushi/ripgrep", &path);
         assert!(git.is_ok());
         let git = git.unwrap();
-        let branches = git.branch_names(None).unwrap();
-        assert!(branches.len() > 0);
-        assert!(branches.contains(&"master".to_string()));
+        let mut branches = git.branches(None).unwrap();
+        assert!(branches.any(|b| b.name().unwrap() == "master"));
         let result = git.checkout("origin/ag/libripgrep-freeze-2");
         assert!(result.is_ok());
         let removed = remove_dir_all(path);
