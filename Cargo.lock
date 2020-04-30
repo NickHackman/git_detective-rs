@@ -437,6 +437,7 @@ dependencies = [
  "git2",
  "tokei",
  "tui",
+ "url",
 ]
 
 [[package]]
