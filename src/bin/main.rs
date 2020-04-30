@@ -11,7 +11,7 @@
 
 use clap::{crate_authors, crate_version, App, AppSettings, Arg, ArgMatches};
 
-use git_detective::{error::Error, GitDetective, Mode};
+use git_detective::{error::Error, GitDetective};
 
 fn cli() -> ArgMatches<'static> {
     App::new("gd")
@@ -71,11 +71,11 @@ fn construct_git_detective(matches: ArgMatches) -> Result<GitDetective, Error> {
                 Some(uri) => uri,
                 None => panic!("URL is required"),
             };
-            GitDetective::new(Mode::Clone(path.to_string()), uri, branch)
+            GitDetective::clone(uri, branch, path)
         }
         Some("open") => {
             let path = matches.value_of("path").unwrap_or(".");
-            GitDetective::new(Mode::Open, path, branch)
+            GitDetective::open(path, branch)
         }
         _ => panic!("Must enter a subcommand"),
     }

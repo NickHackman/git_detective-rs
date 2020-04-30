@@ -11,10 +11,21 @@ pub enum Error {
     ///
     /// Error occurs from calling `git::Repo::checkout()`
     BranchDoesntExist(String),
+
+    /// Failed to parse URL to clone
+    ///
+    /// Error occurs from calling `GitDetective::clone()`
+    GitUrlError(url::ParseError),
 }
 
 impl From<git2::Error> for Error {
     fn from(error: git2::Error) -> Self {
         Self::GitError(error)
+    }
+}
+
+impl From<url::ParseError> for Error {
+    fn from(error: url::ParseError) -> Self {
+        Self::GitUrlError(error)
     }
 }
