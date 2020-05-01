@@ -63,7 +63,7 @@ impl Repo {
     /// # Returns
     ///
     /// Result<Iterator<GitReference>>, git2::Error>
-    pub fn branches<'repo>(
+    pub fn branches(
         &self,
         filter: Option<git2::BranchType>,
     ) -> Result<impl Iterator<Item = GitReference>, Error> {
