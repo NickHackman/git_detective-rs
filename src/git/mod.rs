@@ -106,7 +106,6 @@ impl Repo {
         let mut rev_walk = self.repo.revwalk()?;
         rev_walk.push_head()?;
         Ok(rev_walk
-            .into_iter()
             .flatten()
             .filter_map(move |id| self.repo.find_commit(id).map(GitReference::Commit).ok()))
     }
@@ -141,7 +140,6 @@ impl Repo {
         let mut rev_walk = self.repo.revwalk()?;
         rev_walk.push_head()?;
         Ok(rev_walk
-            .into_iter()
             .flatten()
             .filter_map(|id| self.repo.find_commit(id).ok())
             .fold(HashSet::new(), |mut set, commit| {
@@ -221,24 +219,6 @@ impl Repo {
             repo: Repository::clone_recurse(url.as_ref(), path)?,
         })
     }
-
-    /// Checkout a branch by name
-    ///
-    /// # Returns
-    ///
-    /// Result<(), Error>
-    pub fn checkout(&self, branch_name: &str) -> Result<(), Error> {
-        let head = self.repo.head()?;
-        let oid = head.target().unwrap();
-        let commit = self.repo.find_commit(oid)?;
-        self.repo.branch(branch_name, &commit, false)?;
-        let full_branch_name = format!("refs/heads/{}", branch_name);
-        let obj = self.repo.revparse_single(&full_branch_name)?;
-
-        self.repo.checkout_tree(&obj, None)?;
-
-        self.repo.set_head(&full_branch_name).map_err(Error::from)
-    }
 }
 
 #[cfg(test)]
@@ -314,20 +294,6 @@ mod git_tests {
         let contributors = git.contributors().unwrap();
         assert!(contributors.contains("Andrew Gallant"));
         assert!(contributors.contains("Samuel Walladge"));
-        let removed = remove_dir_all(path);
-        assert!(removed.is_ok());
-    }
-
-    #[test]
-    fn test_checkout() {
-        let path = PathBuf::from("ripgrep");
-        let git = Repo::clone("https://github.com/BurntSushi/ripgrep", &path);
-        assert!(git.is_ok());
-        let git = git.unwrap();
-        let mut branches = git.branches(None).unwrap();
-        assert!(branches.any(|b| b.name().unwrap() == "master"));
-        let result = git.checkout("origin/ag/libripgrep-freeze-2");
-        assert!(result.is_ok());
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
     }

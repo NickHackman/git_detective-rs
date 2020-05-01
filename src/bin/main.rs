@@ -30,13 +30,6 @@ fn cli() -> ArgMatches<'static> {
                         .default_value("git_detective_repo"),
                 )
                 .arg(
-                    Arg::with_name("branch")
-                        .short("b")
-                        .help("Branch to checkout")
-                        .long("branch")
-                        .default_value("master"),
-                )
-                .arg(
                     Arg::with_name("URL")
                         .required(true)
                         .help("Git URL to clone then open"),
@@ -50,20 +43,12 @@ fn cli() -> ArgMatches<'static> {
                     Arg::with_name("path")
                         .default_value(".")
                         .help("Path to Git repository to open"),
-                )
-                .arg(
-                    Arg::with_name("branch")
-                        .short("b")
-                        .help("Branch to checkout")
-                        .long("branch")
-                        .default_value("master"),
                 ),
         )
         .get_matches()
 }
 
 fn construct_git_detective(matches: ArgMatches) -> Result<GitDetective, Error> {
-    let branch = matches.value_of("branch").unwrap_or("master");
     match matches.subcommand_name() {
         Some("clone") => {
             let path = matches.value_of("path").unwrap_or("git_detective_repo");
@@ -71,11 +56,11 @@ fn construct_git_detective(matches: ArgMatches) -> Result<GitDetective, Error> {
                 Some(uri) => uri,
                 None => panic!("URL is required"),
             };
-            GitDetective::clone(uri, branch, path)
+            GitDetective::clone(uri, path)
         }
         Some("open") => {
             let path = matches.value_of("path").unwrap_or(".");
-            GitDetective::open(path, branch)
+            GitDetective::open(path)
         }
         _ => panic!("Must enter a subcommand"),
     }

@@ -39,12 +39,20 @@ impl GitDetective {
     ///
     /// Branch to checkout
     ///
+    /// # Example
+    ///
+    /// ```
+    /// use git_detective::GitDetective;
+    ///
+    /// let repo = GitDetective::open(".");
+    /// assert!(repo.is_ok());
+    /// ```
+    ///
     /// # Returns
     ///
     /// Result<Self, Error>
-    pub fn open<S: AsRef<str>, P: AsRef<Path>>(path: P, branch: S) -> Result<Self, Error> {
+    pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
         let repo = Repo::open(path)?;
-        repo.checkout(branch.as_ref())?;
         Ok(Self { repo })
     }
 
@@ -64,13 +72,28 @@ impl GitDetective {
     ///
     /// Path to where to clone the Git Repository to
     ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::fs::remove_dir_all;
+    ///
+    /// use git_detective::GitDetective;
+    ///
+    /// let path = "git_detective_cloned";
+    ///
+    /// let repo = GitDetective::clone("https://github.com/NickHackman/Git-Detective.git", path);
+    /// assert!(repo.is_ok());
+    ///
+    /// // Clean up cloned repository
+    /// remove_dir_all(path);
+    /// ```
+    ///
     /// # Returns
     ///
     /// Result<Self, Error>
-    pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, branch: S, path: P) -> Result<Self, Error> {
+    pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> Result<Self, Error> {
         let valid_url = Url::parse(url.as_ref())?;
         let repo = Repo::clone(valid_url.as_str(), path.as_ref())?;
-        repo.checkout(branch.as_ref())?;
         Ok(Self { repo })
     }
 }
