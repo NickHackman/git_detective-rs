@@ -37,4 +37,59 @@ impl<'repo> GitReference<'repo> {
             Self::Branch(branch) => Ok(String::from_utf8_lossy(branch.name_bytes()?)),
         }
     }
+
+    /// Converts a `GitReference` into a `git2::Commit`
+    ///
+    /// # Errors
+    ///
+    /// Returns `Error::GitRefConvError` if `self` isn't variant `Commit`
+    ///
+    /// # Returns
+    ///
+    /// Result<git2::Commit<'repo>, Error>
+    pub fn into_commit(self) -> Result<git2::Commit<'repo>, Error> {
+        match self {
+            Self::Commit(commit) => Ok(commit),
+            Self::Tag(tag) => Err(Error::GitRefConvError(format!("{:?} into commit", tag))),
+            Self::Branch(_) => Err(Error::GitRefConvError(
+                "GitReference::Branch into commit".to_string(),
+            )),
+        }
+    }
+
+    /// Converts a `GitReference` into a `git2::Tag`
+    ///
+    /// # Errors
+    ///
+    /// Returns `Error::GitRefConvError` if `self` isn't variant `Tag`
+    ///
+    /// # Returns
+    ///
+    /// Result<git2::Tag<'repo>, Error>
+    pub fn into_tag(self) -> Result<git2::Tag<'repo>, Error> {
+        match self {
+            Self::Commit(commit) => Err(Error::GitRefConvError(format!("{:?} into tag", commit))),
+            Self::Tag(tag) => Ok(tag),
+            Self::Branch(_) => Err(Error::GitRefConvError(
+                "GitReference::Branch into commit".to_string(),
+            )),
+        }
+    }
+
+    /// Converts a `GitReference` into a `git2::Branch`
+    ///
+    /// # Errors
+    ///
+    /// Returns `Error::GitRefConvError` if `self` isn't variant `Branch`
+    ///
+    /// # Returns
+    ///
+    /// Result<git2::Branch<'repo>, Error>
+    pub fn into_branch(self) -> Result<git2::Branch<'repo>, Error> {
+        match self {
+            Self::Commit(commit) => Err(Error::GitRefConvError(format!("{:?} into tag", commit))),
+            Self::Tag(tag) => Err(Error::GitRefConvError(format!("{:?} into branch", tag))),
+            Self::Branch(branch) => Ok(branch),
+        }
+    }
 }

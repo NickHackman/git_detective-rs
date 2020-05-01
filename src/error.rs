@@ -16,6 +16,11 @@ pub enum Error {
     ///
     /// Error occurs from calling `GitDetective::clone()`
     GitUrlError(url::ParseError),
+
+    /// Failed to convert GitReference into a subtype
+    ///
+    /// using one of `into_commit`, `into_tag`, or `into_branch`
+    GitRefConvError(String),
 }
 
 impl From<git2::Error> for Error {
