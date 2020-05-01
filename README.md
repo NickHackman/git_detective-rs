@@ -1,5 +1,8 @@
 # Git Detective
 
+[![Build Status](https://travis-ci.org/NickHackman/Git-Detective.svg?branch=development)](https://travis-ci.org/NickHackman/Git-Detective)
+[![Coverage Status](https://coveralls.io/repos/github/NickHackman/Git-Detective/badge.svg?branch=development)](https://coveralls.io/github/NickHackman/Git-Detective?branch=development)
+
 ## Why?
 
 I haven't graded much at [Ohio State University](https://www.osu.edu/), but I'm
