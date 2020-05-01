@@ -14,7 +14,7 @@ use std::path::Path;
 use url::Url;
 
 /// Performs git operations
-mod git;
+pub mod git;
 use git::Repo;
 
 /// Errors for Git Detective

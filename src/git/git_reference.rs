@@ -2,9 +2,13 @@ use std::borrow::Cow;
 
 use crate::error::Error;
 
+/// A Git Object
 pub enum GitReference<'repo> {
+    /// A Commit
     Commit(git2::Commit<'repo>),
+    /// A Branch
     Branch(git2::Branch<'repo>),
+    /// A Tag
     Tag(git2::Tag<'repo>),
 }
 
@@ -13,7 +17,7 @@ impl<'repo> GitReference<'repo> {
     ///
     /// Commit: Returns the unique Identifier
     ///
-    /// NOTE: Commit allocates
+    /// NOTE: `GitReferenec::Commit` allocates
     ///
     /// Branch: Branch Name
     ///
