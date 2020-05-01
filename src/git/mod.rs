@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::iter::Iterator;
 use std::path::Path;
 
@@ -108,6 +109,47 @@ impl Repo {
             .into_iter()
             .flatten()
             .filter_map(move |id| self.repo.find_commit(id).map(GitReference::Commit).ok()))
+    }
+
+    /// List Contributors
+    ///
+    /// NOTE: If author name isn't valid UTF-8 they will be filtered out
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::fs::remove_dir_all;
+    ///
+    /// use git_detective::git::{Repo};
+    ///
+    /// let path = "exa";
+    ///
+    /// let repo = Repo::clone("https://github.com/ogham/exa.git", path).unwrap();
+    /// let contributors = repo.contributors().unwrap();
+    /// for contributor in contributors {
+    ///   println!("{}", contributor);
+    /// }
+    ///
+    /// // Remove Git Repository
+    /// remove_dir_all(path);
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// Result<HashSet<String>, Error>
+    pub fn contributors(&self) -> Result<HashSet<String>, Error> {
+        let mut rev_walk = self.repo.revwalk()?;
+        rev_walk.push_head()?;
+        Ok(rev_walk
+            .into_iter()
+            .flatten()
+            .filter_map(|id| self.repo.find_commit(id).ok())
+            .fold(HashSet::new(), |mut set, commit| {
+                if let Some(name) = commit.author().name() {
+                    set.insert(name.to_string());
+                }
+                set
+            }))
     }
 
     /// List tags
@@ -259,6 +301,19 @@ mod git_tests {
         let git = git.unwrap();
         let mut commits = git.commits().unwrap();
         assert!(commits.any(|c| c.name().unwrap() == "29c86b2fd5876061c2e882abe71db07c3656b2c8"));
+        let removed = remove_dir_all(path);
+        assert!(removed.is_ok());
+    }
+
+    #[test]
+    fn test_contibutors() {
+        let path = PathBuf::from("imdb-rename");
+        let git = Repo::clone("https://github.com/BurntSushi/imdb-rename.git", &path);
+        assert!(git.is_ok());
+        let git = git.unwrap();
+        let contributors = git.contributors().unwrap();
+        assert!(contributors.contains("Andrew Gallant"));
+        assert!(contributors.contains("Samuel Walladge"));
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
     }
