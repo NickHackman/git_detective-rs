@@ -112,7 +112,7 @@ impl Repo {
 
     /// List Contributors
     ///
-    /// NOTE: If author name isn't valid UTF-8 they will be filtered out
+    /// **NOTE**: If author name isn't valid UTF-8 they will be filtered out
     ///
     /// # Example
     ///
@@ -152,7 +152,7 @@ impl Repo {
 
     /// List tags
     ///
-    /// NOTE: If a Tag has a name that isn't valid UTF-8 it is filtered out
+    /// **NOTE**: If a Tag has a name that isn't valid UTF-8 it is filtered out
     ///
     /// # Parameters
     ///
