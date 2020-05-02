@@ -2,11 +2,15 @@ use std::collections::HashSet;
 use std::iter::Iterator;
 use std::path::Path;
 
-use git2::Repository;
+use git2::{Repository, StatusOptions, StatusShow};
 
 /// A Wrapper around `git2::Branch`, `git2::Commit`, and `git2::Tag`
 pub mod git_reference;
 use git_reference::GitReference;
+
+/// Status for a file
+pub mod file_status;
+use file_status::FileStatus;
 
 use crate::error::Error;
 
@@ -15,6 +19,7 @@ use crate::error::Error;
 /// Wrapper around git2::Repository
 pub struct Repo {
     repo: Repository,
+    excluded_files: HashSet<String>,
 }
 
 impl Repo {
@@ -37,6 +42,7 @@ impl Repo {
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
         Ok(Self {
             repo: Repository::discover(path)?,
+            excluded_files: HashSet::new(),
         })
     }
 
@@ -217,6 +223,7 @@ impl Repo {
     pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> Result<Self, Error> {
         Ok(Self {
             repo: Repository::clone_recurse(url.as_ref(), path)?,
+            excluded_files: HashSet::new(),
         })
     }
 
@@ -242,6 +249,38 @@ impl Repo {
     /// - ApplyMailboxOrRebase
     pub fn state(&self) -> git2::RepositoryState {
         self.repo.state()
+    }
+
+    /// Exclude a file from being listed or counted
+    ///
+    /// Useful for removing files like `setup.py`, tests, etc
+    ///
+    /// # Parameters
+    ///
+    /// file: S - File to ignore
+    pub fn exclude_file<S: Into<String>>(&mut self, file: S) {
+        self.excluded_files.insert(file.into());
+    }
+
+    /// List files in the Git Repository
+    ///
+    /// Filters files based on `excluded_files`
+    ///
+    /// # Returns
+    ///
+    /// Result<Vec<FileStatus>, Error>
+    pub fn ls(&self) -> Result<Vec<FileStatus>, Error> {
+        let mut base_options = StatusOptions::new();
+        let options = base_options
+            .show(StatusShow::IndexAndWorkdir)
+            .include_unmodified(true);
+        Ok(self
+            .repo
+            .statuses(Some(options))?
+            .iter()
+            .map(FileStatus::from)
+            .filter(|file_stat| !self.excluded_files.contains(&file_stat.path))
+            .collect())
     }
 
     /// Checkout a GitReference
@@ -440,5 +479,72 @@ mod git_tests {
         assert_eq!(tags.len(), 1);
         let checkout_result = repo.checkout(&tags[0]);
         assert!(checkout_result.is_ok());
+        let removed = remove_dir_all(path);
+        assert!(removed.is_ok());
+    }
+
+    #[test]
+    fn ls() {
+        let repo_result = Repo::open(".");
+        assert!(repo_result.is_ok());
+        let repo = repo_result.unwrap();
+        let list_result = repo.ls();
+        assert!(list_result.is_ok());
+        let list = list_result.unwrap();
+        assert!(list
+            .iter()
+            .find(|stat| &stat.path == "Cargo.lock")
+            .is_some());
+        assert!(list
+            .iter()
+            .find(|stat| &stat.path == "Cargo.toml")
+            .is_some());
+        assert!(list.iter().find(|stat| &stat.path == "README.md").is_some());
+    }
+
+    #[test]
+    fn ls_exclude() {
+        let repo_result = Repo::open(".");
+        assert!(repo_result.is_ok());
+        let mut repo = repo_result.unwrap();
+        let list_result = repo.ls();
+        assert!(list_result.is_ok());
+        let list = list_result.unwrap();
+        assert!(list
+            .iter()
+            .find(|stat| &stat.path == "Cargo.lock")
+            .is_some());
+        assert!(list
+            .iter()
+            .find(|stat| &stat.path == "Cargo.toml")
+            .is_some());
+        assert!(list.iter().find(|stat| &stat.path == "README.md").is_some());
+        repo.exclude_file("Cargo.toml");
+        repo.exclude_file("README.md");
+        repo.exclude_file("Cargo.lock");
+        let list_after_result = repo.ls();
+        assert!(list_after_result.is_ok());
+        let list_after = list_after_result.unwrap();
+        assert_eq!(
+            list_after
+                .iter()
+                .find(|stat| &stat.path == "Cargo.lock")
+                .is_some(),
+            false
+        );
+        assert_eq!(
+            list_after
+                .iter()
+                .find(|stat| &stat.path == "Cargo.toml")
+                .is_some(),
+            false
+        );
+        assert_eq!(
+            list_after
+                .iter()
+                .find(|stat| &stat.path == "README.md")
+                .is_some(),
+            false
+        );
     }
 }
