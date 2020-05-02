@@ -112,7 +112,7 @@ impl Repo {
 
     /// List Contributors
     ///
-    /// NOTE: If author name isn't valid UTF-8 they will be filtered out
+    /// **NOTE**: If author name isn't valid UTF-8 they will be filtered out
     ///
     /// # Example
     ///
@@ -152,7 +152,7 @@ impl Repo {
 
     /// List tags
     ///
-    /// NOTE: If a Tag has a name that isn't valid UTF-8 it is filtered out
+    /// **NOTE**: If a Tag has a name that isn't valid UTF-8 it is filtered out
     ///
     /// # Parameters
     ///
@@ -218,6 +218,77 @@ impl Repo {
         Ok(Self {
             repo: Repository::clone_recurse(url.as_ref(), path)?,
         })
+    }
+
+    /// Get the current state of the repository
+    ///
+    /// Either Clean, Merge, Revert, RevertSequence
+    ///
+    /// # Returns
+    ///
+    /// git2::RepositoryState
+    ///
+    /// - Clean
+    /// - Merge
+    /// - Revert
+    /// - RevertSequence
+    /// - CherryPick
+    /// - CherryPickSequence
+    /// - Bisect
+    /// - Rebase
+    /// - RebaseInteractive
+    /// - RebaseMerge
+    /// - ApplyMailbox
+    /// - ApplyMailboxOrRebase
+    pub fn state(&self) -> git2::RepositoryState {
+        self.repo.state()
+    }
+
+    /// Checkout a GitReference
+    ///
+    /// **NOTE**: HEAD is detached, this isn't meant to allow edits, but solely
+    /// to view the state of the repository at this stage
+    ///
+    /// # Parameters
+    ///
+    /// reference: &GitReference - Reference to checkout
+    ///
+    /// # Errors
+    ///
+    /// - `self.is_clean() != true`
+    /// - Reference doesn't exist in repository
+    ///
+    /// # Returns
+    ///
+    /// Result<(), Error>
+    pub fn checkout(&self, reference: &GitReference) -> Result<(), Error> {
+        let state = self.state();
+        if state != git2::RepositoryState::Clean {
+            return Err(Error::UncleanState(state));
+        }
+
+        match reference {
+            GitReference::Commit(c) => self.repo.checkout_tree(c.as_object(), None)?,
+            GitReference::Tag(t) => self.repo.checkout_tree(t.as_object(), None)?,
+            GitReference::Branch(b) => {
+                let obj = b.get().peel(git2::ObjectType::Any)?;
+                self.repo.checkout_tree(&obj, None)?;
+            }
+        };
+
+        let oid = match reference {
+            GitReference::Commit(c) => c.id(),
+            GitReference::Tag(t) => t.id(),
+            GitReference::Branch(b) => {
+                let ref_branch = self
+                    .repo
+                    .resolve_reference_from_short_name(b.name()?.ok_or(Error::NonUTF8String)?)?;
+                // Unwrap is safe, because Branch must exist
+                ref_branch.target().unwrap()
+            }
+        };
+        self.repo.set_head_detached(oid)?;
+        Ok(())
     }
 }
 
@@ -296,5 +367,78 @@ mod git_tests {
         assert!(contributors.contains("Samuel Walladge"));
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
+    }
+
+    #[test]
+    fn checkout_tag() {
+        let path = PathBuf::from("cursive");
+        let clone = Repo::clone("https://github.com/gyscos/cursive.git", &path);
+        assert!(clone.is_ok());
+        let repo = clone.unwrap();
+        let tags_result = repo.tags(Some("v0.14.0"));
+        assert!(tags_result.is_ok());
+        let tags = tags_result.unwrap();
+        assert_eq!(tags.len(), 1);
+        let checkout_result = repo.checkout(&tags[0]);
+        assert!(checkout_result.is_ok());
+        let removed = remove_dir_all(path);
+        assert!(removed.is_ok());
+    }
+
+    #[test]
+    fn checkout_commit() {
+        let path = PathBuf::from("awesome-rust");
+        let clone = Repo::clone("https://github.com/rust-unofficial/awesome-rust.git", &path);
+        assert!(clone.is_ok());
+        let repo = clone.unwrap();
+        let commits_result = repo.commits();
+        assert!(commits_result.is_ok());
+        let mut commits = commits_result.unwrap();
+        let commit_option =
+            commits.find(|c| c.name().unwrap() == "bc7268a41e6cf7cc5391b1fbfec8f1394c5d88b6");
+        assert!(commit_option.is_some());
+        let commit = commit_option.unwrap();
+        let checkout_result = repo.checkout(&commit);
+        assert!(checkout_result.is_ok());
+        let removed = remove_dir_all(path);
+        assert!(removed.is_ok());
+    }
+
+    #[test]
+    fn checkout_branch() {
+        let path = PathBuf::from("rust-book");
+        let clone = Repo::clone("https://github.com/rust-lang/book.git", &path);
+        assert!(clone.is_ok());
+        let repo = clone.unwrap();
+        let branches_result = repo.branches(Some(git2::BranchType::Remote));
+        assert!(branches_result.is_ok());
+        let mut branches = branches_result.unwrap();
+        let branch_option = branches.find(|c| c.name().unwrap() == "origin/gh-pages");
+        assert!(branch_option.is_some());
+        let branch = branch_option.unwrap();
+        let checkout_result = repo.checkout(&branch);
+        assert!(checkout_result.is_ok());
+        let removed = remove_dir_all(path);
+        assert!(removed.is_ok());
+    }
+
+    #[test]
+    fn checkout_tag_then_different_tag() {
+        let path = PathBuf::from("spotify-tui");
+        let clone = Repo::clone("https://github.com/Rigellute/spotify-tui.git", &path);
+        assert!(clone.is_ok());
+        let repo = clone.unwrap();
+        let tags_result = repo.tags(Some("v0.10.0"));
+        assert!(tags_result.is_ok());
+        let tags = tags_result.unwrap();
+        assert_eq!(tags.len(), 1);
+        let checkout_result = repo.checkout(&tags[0]);
+        assert!(checkout_result.is_ok());
+        let tags_result = repo.tags(Some("v0.9.0"));
+        assert!(tags_result.is_ok());
+        let tags = tags_result.unwrap();
+        assert_eq!(tags.len(), 1);
+        let checkout_result = repo.checkout(&tags[0]);
+        assert!(checkout_result.is_ok());
     }
 }

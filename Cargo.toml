@@ -8,5 +8,4 @@ edition = "2018"
 clap = "2.33.0"
 tokei = "11.1.0"
 git2 = "0.13.5"
-tui = { version = "0.9.1", features = ["crossterm"], default-features = false }
 url = "2.1.1"
