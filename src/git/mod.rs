@@ -219,6 +219,77 @@ impl Repo {
             repo: Repository::clone_recurse(url.as_ref(), path)?,
         })
     }
+
+    /// Get the current state of the repository
+    ///
+    /// Either Clean, Merge, Revert, RevertSequence
+    ///
+    /// # Returns
+    ///
+    /// git2::RepositoryState
+    ///
+    /// - Clean
+    /// - Merge
+    /// - Revert
+    /// - RevertSequence
+    /// - CherryPick
+    /// - CherryPickSequence
+    /// - Bisect
+    /// - Rebase
+    /// - RebaseInteractive
+    /// - RebaseMerge
+    /// - ApplyMailbox
+    /// - ApplyMailboxOrRebase
+    pub fn state(&self) -> git2::RepositoryState {
+        self.repo.state()
+    }
+
+    /// Checkout a GitReference
+    ///
+    /// **NOTE**: HEAD is detached, this isn't meant to allow edits, but solely
+    /// to view the state of the repository at this stage
+    ///
+    /// # Parameters
+    ///
+    /// reference: &GitReference - Reference to checkout
+    ///
+    /// # Errors
+    ///
+    /// - `self.is_clean() != true`
+    /// - Reference doesn't exist in repository
+    ///
+    /// # Returns
+    ///
+    /// Result<(), Error>
+    pub fn checkout(&self, reference: &GitReference) -> Result<(), Error> {
+        let state = self.state();
+        if state != git2::RepositoryState::Clean {
+            return Err(Error::UncleanState(state));
+        }
+
+        match reference {
+            GitReference::Commit(c) => self.repo.checkout_tree(c.as_object(), None)?,
+            GitReference::Tag(t) => self.repo.checkout_tree(t.as_object(), None)?,
+            GitReference::Branch(b) => {
+                let obj = b.get().peel(git2::ObjectType::Any)?;
+                self.repo.checkout_tree(&obj, None)?;
+            }
+        };
+
+        let oid = match reference {
+            GitReference::Commit(c) => c.id(),
+            GitReference::Tag(t) => t.id(),
+            GitReference::Branch(b) => {
+                let ref_branch = self
+                    .repo
+                    .resolve_reference_from_short_name(b.name()?.ok_or(Error::NonUTF8String)?)?;
+                // Unwrap is safe, because Branch must exist
+                ref_branch.target().unwrap()
+            }
+        };
+        self.repo.set_head_detached(oid)?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]

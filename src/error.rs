@@ -9,6 +9,14 @@ pub enum Error {
     ///
     /// Error occurs from calling `GitDetective::clone()`
     GitUrlError(url::ParseError),
+    /// Repository isn't in a clean state
+    ///
+    /// Returned from `Repo::is_clean`
+    UncleanState(git2::RepositoryState),
+    /// Git String is not valid UTF-8
+    ///
+    /// Could be a Branch name, commit hash, etc
+    NonUTF8String,
 }
 
 impl From<git2::Error> for Error {
