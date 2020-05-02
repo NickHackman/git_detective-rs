@@ -368,4 +368,77 @@ mod git_tests {
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
     }
+
+    #[test]
+    fn checkout_tag() {
+        let path = PathBuf::from("cursive");
+        let clone = Repo::clone("https://github.com/gyscos/cursive.git", &path);
+        assert!(clone.is_ok());
+        let repo = clone.unwrap();
+        let tags_result = repo.tags(Some("v0.14.0"));
+        assert!(tags_result.is_ok());
+        let tags = tags_result.unwrap();
+        assert_eq!(tags.len(), 1);
+        let checkout_result = repo.checkout(&tags[0]);
+        assert!(checkout_result.is_ok());
+        let removed = remove_dir_all(path);
+        assert!(removed.is_ok());
+    }
+
+    #[test]
+    fn checkout_commit() {
+        let path = PathBuf::from("awesome-rust");
+        let clone = Repo::clone("https://github.com/rust-unofficial/awesome-rust.git", &path);
+        assert!(clone.is_ok());
+        let repo = clone.unwrap();
+        let commits_result = repo.commits();
+        assert!(commits_result.is_ok());
+        let mut commits = commits_result.unwrap();
+        let commit_option =
+            commits.find(|c| c.name().unwrap() == "bc7268a41e6cf7cc5391b1fbfec8f1394c5d88b6");
+        assert!(commit_option.is_some());
+        let commit = commit_option.unwrap();
+        let checkout_result = repo.checkout(&commit);
+        assert!(checkout_result.is_ok());
+        let removed = remove_dir_all(path);
+        assert!(removed.is_ok());
+    }
+
+    #[test]
+    fn checkout_branch() {
+        let path = PathBuf::from("rust-book");
+        let clone = Repo::clone("https://github.com/rust-lang/book.git", &path);
+        assert!(clone.is_ok());
+        let repo = clone.unwrap();
+        let branches_result = repo.branches(Some(git2::BranchType::Remote));
+        assert!(branches_result.is_ok());
+        let mut branches = branches_result.unwrap();
+        let branch_option = branches.find(|c| c.name().unwrap() == "origin/gh-pages");
+        assert!(branch_option.is_some());
+        let branch = branch_option.unwrap();
+        let checkout_result = repo.checkout(&branch);
+        assert!(checkout_result.is_ok());
+        let removed = remove_dir_all(path);
+        assert!(removed.is_ok());
+    }
+
+    #[test]
+    fn checkout_tag_then_different_tag() {
+        let path = PathBuf::from("spotify-tui");
+        let clone = Repo::clone("https://github.com/Rigellute/spotify-tui.git", &path);
+        assert!(clone.is_ok());
+        let repo = clone.unwrap();
+        let tags_result = repo.tags(Some("v0.10.0"));
+        assert!(tags_result.is_ok());
+        let tags = tags_result.unwrap();
+        assert_eq!(tags.len(), 1);
+        let checkout_result = repo.checkout(&tags[0]);
+        assert!(checkout_result.is_ok());
+        let tags_result = repo.tags(Some("v0.9.0"));
+        assert!(tags_result.is_ok());
+        let tags = tags_result.unwrap();
+        assert_eq!(tags.len(), 1);
+        let checkout_result = repo.checkout(&tags[0]);
+        assert!(checkout_result.is_ok());
+    }
 }
