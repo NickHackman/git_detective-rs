@@ -11,7 +11,11 @@ mod git_detective_integration_tests {
     fn clone() {
         let path = "git_detective_cloned_integration_tests";
 
-        let repo = GitDetective::clone("https://github.com/NickHackman/Git-Detective.git", path);
+        let repo = GitDetective::clone(
+            "https://github.com/NickHackman/Git-Detective.git",
+            path,
+            false,
+        );
         assert!(repo.is_ok());
 
         // Clean up cloned repository
@@ -42,7 +46,7 @@ mod git_detective_integration_tests {
     #[test]
     fn invalid_url() {
         let url = "http:::";
-        let repo = GitDetective::clone(url, "bad_url");
+        let repo = GitDetective::clone(url, "bad_url", true);
         assert!(repo.is_err());
         let error = repo.err().unwrap();
         let expected = Error::GitUrlError(url::ParseError::Overflow);
