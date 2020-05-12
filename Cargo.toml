@@ -5,7 +5,6 @@ authors = ["NickHackman <snickhackman@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-clap = "2.33.0"
-tokei = "11.1.0"
+clap = "2.33.1"
 git2 = "0.13.5"
 url = "2.1.1"
