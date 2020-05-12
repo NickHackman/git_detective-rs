@@ -329,9 +329,8 @@ impl Repo {
             GitReference::Commit(c) => c.id(),
             GitReference::Tag(t) => t.id(),
             GitReference::Branch(b) => {
-                let ref_branch = self
-                    .repo
-                    .resolve_reference_from_short_name(b.name()?.ok_or(Error::NonUTF8String)?)?;
+                let name = String::from_utf8(b.name_bytes()?.into())?;
+                let ref_branch = self.repo.resolve_reference_from_short_name(&name)?;
                 // Unwrap is safe, because Branch must exist
                 ref_branch.target().unwrap()
             }
