@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use crate::error::Error;
 
 /// A Git Object
@@ -17,24 +15,22 @@ impl<'repo> GitReference<'repo> {
     ///
     /// Commit: Returns the unique Identifier
     ///
-    /// NOTE: `GitReferenec::Commit` allocates
-    ///
     /// Branch: Branch Name
     ///
     /// Tag: Tag Name
     ///
     /// # Errors
     ///
-    /// **Only** Errors when self is GitReference::Branch
+    /// When The name isn't valid UTF-8
     ///
     /// # Returns
     ///
     /// Result<Cow<str>, Error>
-    pub fn name(&self) -> Result<Cow<str>, Error> {
+    pub fn name(&self) -> Result<String, Error> {
         match self {
-            Self::Commit(commit) => Ok(commit.id().to_string().into()),
-            Self::Tag(tag) => Ok(String::from_utf8_lossy(tag.name_bytes())),
-            Self::Branch(branch) => Ok(String::from_utf8_lossy(branch.name_bytes()?)),
+            Self::Commit(commit) => Ok(commit.id().to_string()),
+            Self::Tag(tag) => Ok(String::from_utf8(tag.name_bytes().into())?),
+            Self::Branch(branch) => Ok(String::from_utf8(branch.name_bytes()?.into())?),
         }
     }
 }
