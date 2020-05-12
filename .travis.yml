@@ -19,4 +19,4 @@ script:
   - cargo fmt -- --check
 
 after_success:
-  - cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID --exclude-files src/bin/main.rs
+  - cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID --exclude-files src/bin/*
