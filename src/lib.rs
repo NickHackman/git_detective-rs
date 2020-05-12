@@ -72,6 +72,10 @@ impl GitDetective {
     ///
     /// Path to where to clone the Git Repository to
     ///
+    /// recursive: bool
+    ///
+    /// Whether or not to clone the repository recursively
+    ///
     /// # Example
     ///
     /// ```
@@ -81,7 +85,7 @@ impl GitDetective {
     ///
     /// let path = "git_detective_cloned";
     ///
-    /// let repo = GitDetective::clone("https://github.com/NickHackman/Git-Detective.git", path);
+    /// let repo = GitDetective::clone("https://github.com/NickHackman/Git-Detective.git", path, true);
     /// assert!(repo.is_ok());
     ///
     /// // Clean up cloned repository
@@ -91,9 +95,13 @@ impl GitDetective {
     /// # Returns
     ///
     /// Result<Self, Error>
-    pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> Result<Self, Error> {
+    pub fn clone<S: AsRef<str>, P: AsRef<Path>>(
+        url: S,
+        path: P,
+        recursive: bool,
+    ) -> Result<Self, Error> {
         let valid_url = Url::parse(url.as_ref())?;
-        let repo = Repo::clone(valid_url.as_str(), path.as_ref())?;
+        let repo = Repo::clone(valid_url.as_str(), path.as_ref(), recursive)?;
         Ok(Self { repo })
     }
 }

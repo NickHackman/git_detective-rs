@@ -58,7 +58,7 @@ impl Repo {
     ///
     /// let path = "bspwm";
     ///
-    /// let repo = Repo::clone("https://github.com/baskerville/bspwm.git", path).unwrap();
+    /// let repo = Repo::clone("https://github.com/baskerville/bspwm.git", path, true).unwrap();
     /// for branch in repo.branches(None).unwrap() {
     ///   println!("{}", branch.name().unwrap());
     /// }
@@ -93,7 +93,7 @@ impl Repo {
     ///
     /// let path = "tui-rs";
     ///
-    /// let repo = Repo::clone("https://github.com/fdehau/tui-rs.git", path).unwrap();
+    /// let repo = Repo::clone("https://github.com/fdehau/tui-rs.git", path, true).unwrap();
     /// for commit in repo.commits().unwrap() {
     ///   match commit {
     ///     GitReference::Commit(commit) => println!("{:?}", commit.message_raw_bytes()),
@@ -129,7 +129,7 @@ impl Repo {
     ///
     /// let path = "exa";
     ///
-    /// let repo = Repo::clone("https://github.com/ogham/exa.git", path).unwrap();
+    /// let repo = Repo::clone("https://github.com/ogham/exa.git", path, true).unwrap();
     /// let contributors = repo.contributors().unwrap();
     /// for contributor in contributors {
     ///   println!("{}", contributor);
@@ -176,7 +176,7 @@ impl Repo {
     ///
     /// let path = "polybar";
     ///
-    /// let repo = Repo::clone("https://github.com/polybar/polybar.git", path).unwrap();
+    /// let repo = Repo::clone("https://github.com/polybar/polybar.git", path, true).unwrap();
     /// for tag in repo.tags(None).unwrap() {
     ///   println!("{}", tag.name().unwrap());
     /// }
@@ -210,7 +210,7 @@ impl Repo {
     ///
     /// let path = "TrojanHorse";
     ///
-    /// let repo = Repo::clone("https://github.com/jklypchak13/TrojanHorse.git", path);
+    /// let repo = Repo::clone("https://github.com/jklypchak13/TrojanHorse.git", path, true);
     /// assert!(repo.is_ok());
     ///
     /// // Cleanup the cloned repository
@@ -220,9 +220,19 @@ impl Repo {
     /// # Returns
     ///
     /// Result<Self, git2::Error>
-    pub fn clone<S: AsRef<str>, P: AsRef<Path>>(url: S, path: P) -> Result<Self, Error> {
+    pub fn clone<S: AsRef<str>, P: AsRef<Path>>(
+        url: S,
+        path: P,
+        recursive: bool,
+    ) -> Result<Self, Error> {
+        let repo = if recursive {
+            Repository::clone_recurse(url.as_ref(), path)?
+        } else {
+            Repository::clone(url.as_ref(), path)?
+        };
+
         Ok(Self {
-            repo: Repository::clone_recurse(url.as_ref(), path)?,
+            repo,
             excluded_files: HashSet::new(),
         })
     }
@@ -362,7 +372,7 @@ mod git_tests {
     #[test]
     fn test_clone() {
         let path = PathBuf::from("globset");
-        let git = Repo::clone("https://github.com/BurntSushi/globset", &path);
+        let git = Repo::clone("https://github.com/BurntSushi/globset", &path, true);
         assert!(git.is_ok());
         let git = git.unwrap();
         let mut branches = git.branches(None).unwrap();
@@ -374,7 +384,7 @@ mod git_tests {
     #[test]
     fn test_tags() {
         let path = PathBuf::from("xsv");
-        let git = Repo::clone("https://github.com/BurntSushi/xsv.git", &path);
+        let git = Repo::clone("https://github.com/BurntSushi/xsv.git", &path, true);
         assert!(git.is_ok());
         let git = git.unwrap();
         let tags = git.tags(None).unwrap();
@@ -386,7 +396,7 @@ mod git_tests {
     #[test]
     fn test_commits() {
         let path = PathBuf::from("walkdir");
-        let git = Repo::clone("https://github.com/BurntSushi/walkdir.git", &path);
+        let git = Repo::clone("https://github.com/BurntSushi/walkdir.git", &path, true);
         assert!(git.is_ok());
         let git = git.unwrap();
         let mut commits = git.commits().unwrap();
@@ -398,7 +408,7 @@ mod git_tests {
     #[test]
     fn test_contibutors() {
         let path = PathBuf::from("imdb-rename");
-        let git = Repo::clone("https://github.com/BurntSushi/imdb-rename.git", &path);
+        let git = Repo::clone("https://github.com/BurntSushi/imdb-rename.git", &path, true);
         assert!(git.is_ok());
         let git = git.unwrap();
         let contributors = git.contributors().unwrap();
@@ -411,7 +421,7 @@ mod git_tests {
     #[test]
     fn checkout_tag() {
         let path = PathBuf::from("cursive");
-        let clone = Repo::clone("https://github.com/gyscos/cursive.git", &path);
+        let clone = Repo::clone("https://github.com/gyscos/cursive.git", &path, true);
         assert!(clone.is_ok());
         let repo = clone.unwrap();
         let tags_result = repo.tags(Some("v0.14.0"));
@@ -427,7 +437,11 @@ mod git_tests {
     #[test]
     fn checkout_commit() {
         let path = PathBuf::from("awesome-rust");
-        let clone = Repo::clone("https://github.com/rust-unofficial/awesome-rust.git", &path);
+        let clone = Repo::clone(
+            "https://github.com/rust-unofficial/awesome-rust.git",
+            &path,
+            true,
+        );
         assert!(clone.is_ok());
         let repo = clone.unwrap();
         let commits_result = repo.commits();
@@ -446,7 +460,7 @@ mod git_tests {
     #[test]
     fn checkout_branch() {
         let path = PathBuf::from("rust-book");
-        let clone = Repo::clone("https://github.com/rust-lang/book.git", &path);
+        let clone = Repo::clone("https://github.com/rust-lang/book.git", &path, true);
         assert!(clone.is_ok());
         let repo = clone.unwrap();
         let branches_result = repo.branches(Some(git2::BranchType::Remote));
@@ -464,7 +478,7 @@ mod git_tests {
     #[test]
     fn checkout_tag_then_different_tag() {
         let path = PathBuf::from("spotify-tui");
-        let clone = Repo::clone("https://github.com/Rigellute/spotify-tui.git", &path);
+        let clone = Repo::clone("https://github.com/Rigellute/spotify-tui.git", &path, true);
         assert!(clone.is_ok());
         let repo = clone.unwrap();
         let tags_result = repo.tags(Some("v0.10.0"));
