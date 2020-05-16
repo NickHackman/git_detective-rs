@@ -21,4 +21,4 @@ counting lines of code to see if they're contributing enough to the group.
   starting from the first commit to the last one, show this as a line chart
   and allow each commit to be clicked on to show a breakdown similar to the
   final product pie chart.
-- A nice clean and intuitive terminal user interface
+- A nice clean and intuitive interface
