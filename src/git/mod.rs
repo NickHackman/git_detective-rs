@@ -73,7 +73,7 @@ impl Repo {
     pub fn branches(
         &self,
         filter: Option<git2::BranchType>,
-    ) -> Result<impl Iterator<Item = GitReference>, Error> {
+    ) -> Result<impl Iterator<Item = GitReference<'_>>, Error> {
         Ok(self
             .repo
             .branches(filter)?
@@ -108,7 +108,7 @@ impl Repo {
     /// # Returns
     ///
     /// Result<Iterator<GitReference>, Error>
-    pub fn commits(&self) -> Result<impl Iterator<Item = GitReference>, Error> {
+    pub fn commits(&self) -> Result<impl Iterator<Item = GitReference<'_>>, Error> {
         let mut rev_walk = self.repo.revwalk()?;
         rev_walk.push_head()?;
         Ok(rev_walk
@@ -188,7 +188,7 @@ impl Repo {
     /// # Returns
     ///
     /// Result<Vec<String>, Error>
-    pub fn tags(&self, pattern: Option<&str>) -> Result<Vec<GitReference>, Error> {
+    pub fn tags(&self, pattern: Option<&str>) -> Result<Vec<GitReference<'_>>, Error> {
         let names = self.repo.tag_names(pattern)?;
         Ok(names
             .iter()
@@ -310,7 +310,7 @@ impl Repo {
     /// # Returns
     ///
     /// Result<(), Error>
-    pub fn checkout(&self, reference: &GitReference) -> Result<(), Error> {
+    pub fn checkout(&self, reference: &GitReference<'_>) -> Result<(), Error> {
         let state = self.state();
         if state != git2::RepositoryState::Clean {
             return Err(Error::UncleanState(state));
@@ -360,7 +360,7 @@ mod git_tests {
         let git = git.unwrap();
         let branches = git.branches(None);
         assert!(branches.is_ok());
-        let branches: Vec<GitReference> = branches.unwrap().collect();
+        let branches: Vec<GitReference<'_>> = branches.unwrap().collect();
         assert!(branches.len() > 0);
         let mut branches = git.branches(None).unwrap();
         assert!(

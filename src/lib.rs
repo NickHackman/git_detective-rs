@@ -6,6 +6,7 @@
     unsafe_code,
     unused_import_braces,
     unused_qualifications,
+    rust_2018_idioms,
     unused_must_use
 )]
 
