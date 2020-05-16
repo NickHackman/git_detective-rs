@@ -22,10 +22,6 @@ impl<'repo> GitReference<'repo> {
     /// # Errors
     ///
     /// When The name isn't valid UTF-8
-    ///
-    /// # Returns
-    ///
-    /// Result<Cow<str>, Error>
     pub fn name(&self) -> Result<String, Error> {
         match self {
             Self::Commit(commit) => Ok(commit.id().to_string()),

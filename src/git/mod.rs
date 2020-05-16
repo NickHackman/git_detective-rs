@@ -35,10 +35,6 @@ impl Repo {
     /// let repo_result = Repo::open(".");
     /// assert!(repo_result.is_ok());
     /// ```
-    ///
-    /// # Returns
-    ///
-    /// Result<Self, git2::Error>
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
         Ok(Self {
             repo: Repository::discover(path)?,
@@ -66,10 +62,6 @@ impl Repo {
     /// // Remove Git Repository
     /// remove_dir_all(path);
     /// ```
-    ///
-    /// # Returns
-    ///
-    /// Result<Iterator<GitReference>>, git2::Error>
     pub fn branches(
         &self,
         filter: Option<git2::BranchType>,
@@ -104,10 +96,6 @@ impl Repo {
     /// // Remove Git Repository
     /// remove_dir_all(path);
     /// ```
-    ///
-    /// # Returns
-    ///
-    /// Result<Iterator<GitReference>, Error>
     pub fn commits(&self) -> Result<impl Iterator<Item = GitReference<'_>>, Error> {
         let mut rev_walk = self.repo.revwalk()?;
         rev_walk.push_head()?;
@@ -138,10 +126,6 @@ impl Repo {
     /// // Remove Git Repository
     /// remove_dir_all(path);
     /// ```
-    ///
-    /// # Returns
-    ///
-    /// Result<HashSet<String>, Error>
     pub fn contributors(&self) -> Result<HashSet<String>, Error> {
         let mut rev_walk = self.repo.revwalk()?;
         rev_walk.push_head()?;
@@ -159,12 +143,6 @@ impl Repo {
     /// List tags
     ///
     /// **NOTE**: If a Tag has a name that isn't valid UTF-8 it is filtered out
-    ///
-    /// # Parameters
-    ///
-    /// pattern: Option<&str>
-    ///
-    /// pattern to filter Tags by
     ///
     /// # Example
     ///
@@ -184,10 +162,6 @@ impl Repo {
     /// // Remove Git Repository
     /// remove_dir_all(path);
     /// ```
-    ///
-    /// # Returns
-    ///
-    /// Result<Vec<String>, Error>
     pub fn tags(&self, pattern: Option<&str>) -> Result<Vec<GitReference<'_>>, Error> {
         let names = self.repo.tag_names(pattern)?;
         Ok(names
@@ -216,10 +190,6 @@ impl Repo {
     /// // Cleanup the cloned repository
     /// remove_dir_all(path);
     /// ```
-    ///
-    /// # Returns
-    ///
-    /// Result<Self, git2::Error>
     pub fn clone<S: AsRef<str>, P: AsRef<Path>>(
         url: S,
         path: P,
@@ -264,10 +234,6 @@ impl Repo {
     /// Exclude a file from being listed or counted
     ///
     /// Useful for removing files like `setup.py`, tests, etc
-    ///
-    /// # Parameters
-    ///
-    /// file: S - File to ignore
     pub fn exclude_file<S: Into<String>>(&mut self, file: S) {
         self.excluded_files.insert(file.into());
     }
@@ -275,10 +241,6 @@ impl Repo {
     /// List files in the Git Repository
     ///
     /// Filters files based on `excluded_files`
-    ///
-    /// # Returns
-    ///
-    /// Result<Vec<FileStatus>, Error>
     pub fn ls(&self) -> Result<Vec<FileStatus>, Error> {
         let mut base_options = StatusOptions::new();
         let options = base_options
@@ -298,18 +260,10 @@ impl Repo {
     /// **NOTE**: HEAD is detached, this isn't meant to allow edits, but solely
     /// to view the state of the repository at this stage
     ///
-    /// # Parameters
-    ///
-    /// reference: &GitReference - Reference to checkout
-    ///
     /// # Errors
     ///
     /// - `self.is_clean() != true`
     /// - Reference doesn't exist in repository
-    ///
-    /// # Returns
-    ///
-    /// Result<(), Error>
     pub fn checkout(&self, reference: &GitReference<'_>) -> Result<(), Error> {
         let state = self.state();
         if state != git2::RepositoryState::Clean {

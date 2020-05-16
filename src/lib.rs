@@ -30,16 +30,6 @@ pub struct GitDetective {
 impl GitDetective {
     /// Open a Local Git Repository
     ///
-    /// # Parameters
-    ///
-    /// path: P
-    ///
-    /// Path to local Git Repository
-    ///
-    /// branch: S
-    ///
-    /// Branch to checkout
-    ///
     /// # Example
     ///
     /// ```
@@ -48,34 +38,12 @@ impl GitDetective {
     /// let repo = GitDetective::open(".");
     /// assert!(repo.is_ok());
     /// ```
-    ///
-    /// # Returns
-    ///
-    /// Result<Self, Error>
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
         let repo = Repo::open(path)?;
         Ok(Self { repo })
     }
 
     /// Clone a remote Git Repository
-    ///
-    /// # Parameters
-    ///
-    /// url: S
-    ///
-    /// Url to a remote Git Repository
-    ///
-    /// branch: S
-    ///
-    /// Branch to checkout
-    ///
-    /// path: P
-    ///
-    /// Path to where to clone the Git Repository to
-    ///
-    /// recursive: bool
-    ///
-    /// Whether or not to clone the repository recursively
     ///
     /// # Example
     ///
@@ -92,10 +60,6 @@ impl GitDetective {
     /// // Clean up cloned repository
     /// remove_dir_all(path);
     /// ```
-    ///
-    /// # Returns
-    ///
-    /// Result<Self, Error>
     pub fn clone<S: AsRef<str>, P: AsRef<Path>>(
         url: S,
         path: P,
