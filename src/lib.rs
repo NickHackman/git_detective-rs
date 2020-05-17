@@ -1,6 +1,6 @@
 //! Git Detective
 //!
-//! A Terminal User Interface to view git contributions
+//! A Library to better investigate the work done in a Git Repository
 #![deny(
     missing_docs,
     unsafe_code,
@@ -10,17 +10,20 @@
     unused_must_use
 )]
 
+use std::collections::HashSet;
 use std::path::Path;
 
 use url::Url;
 
 /// Performs git operations
-pub mod git;
-use git::Repo;
+pub(crate) mod git;
+pub use git::{Branch, Commit, Signature, Tag};
+use git::{GitReference, Repo};
+pub use git2::RepositoryState;
 
 /// Errors for Git Detective
-pub mod error;
-use error::Error;
+pub(crate) mod error;
+pub use error::Error;
 
 /// Main Entry point
 pub struct GitDetective {

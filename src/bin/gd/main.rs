@@ -11,7 +11,7 @@
 
 use clap::ArgMatches;
 
-use git_detective::{error::Error, GitDetective};
+use git_detective::{Error, GitDetective};
 
 mod cli;
 use cli::clap;
