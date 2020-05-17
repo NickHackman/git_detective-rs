@@ -55,14 +55,6 @@ mod git_detective_integration_tests {
     }
 
     #[test]
-    fn is_head() -> Result<(), Error> {
-        let repo = GitDetective::open(".")?;
-        let mut branches = repo.branches()?;
-        assert!(branches.any(|branch| branch.is_head()));
-        Ok(())
-    }
-
-    #[test]
     fn first_commit() -> Result<(), Error> {
         let gd = GitDetective::open(".")?;
         let first_commit = gd.commits()?.last().unwrap();
