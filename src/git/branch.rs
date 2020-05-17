@@ -1,5 +1,3 @@
-use std::string::FromUtf8Error;
-
 use crate::git::GitReference;
 use crate::Error;
 
@@ -15,7 +13,7 @@ use crate::Error;
 /// let gd = GitDetective::open(".")?;
 /// let branches = gd.branches()?;
 /// for branch in branches {
-///   println!("{}", branch.name()??);
+///   println!("{}", branch.name()?);
 /// }
 /// # Ok(())
 /// # }
@@ -33,13 +31,10 @@ impl<'repo> Branch<'_> {
     /// Name of the branch
     ///
     /// # Errors
-    /// - Name isn't valid UTF-8
-    /// - Branch isn't a local or remote branch
-    pub fn name(&self) -> Result<Result<String, FromUtf8Error>, Error> {
-        Ok(self
-            .inner
-            .name_bytes()
-            .map(|name| String::from_utf8(name.into()))?)
+    /// - Name isn't valid UTF-8 [`NonUTF8String`](enum.Error.html#variant.NonUTF8String)
+    /// - Branch isn't a local or remote branch [`GitError`](enum.Error.html#variant.GitError)
+    pub fn name(&self) -> Result<String, Error> {
+        Ok(String::from_utf8(self.inner.name_bytes()?.into())?)
     }
 }
 

@@ -210,8 +210,9 @@ mod git_tests {
         let branches: Vec<Branch<'_>> = branches.unwrap().collect();
         assert!(branches.len() > 0);
         let mut branches = git.branches(None).unwrap();
-        assert!(branches.any(|b| b.name().unwrap().unwrap() == "master"
-            || b.name().unwrap().unwrap() == "development"));
+        assert!(
+            branches.any(|b| b.name().unwrap() == "master" || b.name().unwrap() == "development")
+        );
     }
 
     #[test]
@@ -221,7 +222,7 @@ mod git_tests {
         assert!(git.is_ok());
         let git = git.unwrap();
         let mut branches = git.branches(None).unwrap();
-        assert!(branches.any(|b| b.name().unwrap().unwrap() == "master"));
+        assert!(branches.any(|b| b.name().unwrap() == "master"));
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
     }
@@ -313,7 +314,7 @@ mod git_tests {
         let branches_result = repo.branches(Some(git2::BranchType::Remote));
         assert!(branches_result.is_ok());
         let mut branches = branches_result.unwrap();
-        let branch_option = branches.find(|c| c.name().unwrap().unwrap() == "origin/gh-pages");
+        let branch_option = branches.find(|c| c.name().unwrap() == "origin/gh-pages");
         assert!(branch_option.is_some());
         let branch = branch_option.unwrap();
         let checkout_result = repo.checkout(branch);

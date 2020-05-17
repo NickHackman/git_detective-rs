@@ -164,7 +164,7 @@ impl GitDetective {
     /// let repo = GitDetective::open(".")?;
     /// let mut branches = repo.branches()?;
     ///
-    /// assert!(branches.any(|branch| branch.name().unwrap().unwrap() == "development"));
+    /// assert!(branches.any(|branch| branch.name().unwrap() == "development"));
     /// # Ok(())
     /// # }
     /// ```
