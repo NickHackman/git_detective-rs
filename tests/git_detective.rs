@@ -55,13 +55,10 @@ mod git_detective_integration_tests {
     }
 
     #[test]
-    fn master_is_not_head() -> Result<(), Error> {
+    fn is_head() -> Result<(), Error> {
         let repo = GitDetective::open(".")?;
         let mut branches = repo.branches()?;
-        let dev = branches
-            .find(|branch| branch.name().unwrap() == "origin/master")
-            .unwrap();
-        assert!(!dev.is_head());
+        assert!(branches.any(|branch| branch.is_head()));
         Ok(())
     }
 
