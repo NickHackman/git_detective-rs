@@ -4,15 +4,26 @@ use std::path::Path;
 
 use git2::{Repository, StatusOptions, StatusShow};
 
-/// A Wrapper around `git2::Branch`, `git2::Commit`, and `git2::Tag`
-pub mod git_reference;
-use git_reference::GitReference;
+pub(crate) mod git_reference;
+pub(crate) use git_reference::GitReference;
+
+pub(crate) mod commit;
+pub use commit::Commit;
+
+pub(crate) mod branch;
+pub use branch::Branch;
+
+pub(crate) mod tag;
+pub use tag::Tag;
+
+pub(crate) mod signature;
+pub use signature::Signature;
 
 /// Status for a file
 pub mod file_status;
 use file_status::FileStatus;
 
-use crate::error::Error;
+use crate::Error;
 
 /// A Git Repository
 ///
@@ -65,12 +76,12 @@ impl Repo {
     pub fn branches(
         &self,
         filter: Option<git2::BranchType>,
-    ) -> Result<impl Iterator<Item = GitReference<'_>>, Error> {
+    ) -> Result<impl Iterator<Item = Branch<'_>>, Error> {
         Ok(self
             .repo
             .branches(filter)?
             .flatten()
-            .map(|(branch, _)| GitReference::Branch(branch)))
+            .map(|(branch, _)| Branch::from(branch)))
     }
 
     /// List Commits
@@ -96,12 +107,12 @@ impl Repo {
     /// // Remove Git Repository
     /// remove_dir_all(path);
     /// ```
-    pub fn commits(&self) -> Result<impl Iterator<Item = GitReference<'_>>, Error> {
+    pub fn commits(&self) -> Result<impl Iterator<Item = Commit<'_>>, Error> {
         let mut rev_walk = self.repo.revwalk()?;
         rev_walk.push_head()?;
         Ok(rev_walk
             .flatten()
-            .filter_map(move |id| self.repo.find_commit(id).map(GitReference::Commit).ok()))
+            .filter_map(move |id| self.repo.find_commit(id).map(Commit::from).ok()))
     }
 
     /// List Contributors
@@ -162,13 +173,13 @@ impl Repo {
     /// // Remove Git Repository
     /// remove_dir_all(path);
     /// ```
-    pub fn tags(&self, pattern: Option<&str>) -> Result<Vec<GitReference<'_>>, Error> {
+    pub fn tags(&self, pattern: Option<&str>) -> Result<Vec<Tag<'_>>, Error> {
         let names = self.repo.tag_names(pattern)?;
         Ok(names
             .iter()
             .filter_map(|name| name)
             .filter_map(move |name| match self.repo.revparse_single(name) {
-                Ok(obj) => obj.into_tag().map(GitReference::Tag).ok(),
+                Ok(obj) => obj.into_tag().map(Tag::from).ok(),
                 Err(_) => None,
             })
             .collect())
@@ -264,31 +275,16 @@ impl Repo {
     ///
     /// - `self.is_clean() != true`
     /// - Reference doesn't exist in repository
-    pub fn checkout(&self, reference: &GitReference<'_>) -> Result<(), Error> {
+    pub fn checkout<'repo, GitRef: GitReference<'repo>>(
+        &self,
+        git_ref: GitRef,
+    ) -> Result<(), Error> {
         let state = self.state();
         if state != git2::RepositoryState::Clean {
             return Err(Error::UncleanState(state));
         }
-
-        match reference {
-            GitReference::Commit(c) => self.repo.checkout_tree(c.as_object(), None)?,
-            GitReference::Tag(t) => self.repo.checkout_tree(t.as_object(), None)?,
-            GitReference::Branch(b) => {
-                let obj = b.get().peel(git2::ObjectType::Any)?;
-                self.repo.checkout_tree(&obj, None)?;
-            }
-        };
-
-        let oid = match reference {
-            GitReference::Commit(c) => c.id(),
-            GitReference::Tag(t) => t.id(),
-            GitReference::Branch(b) => {
-                let name = String::from_utf8(b.name_bytes()?.into())?;
-                let ref_branch = self.repo.resolve_reference_from_short_name(&name)?;
-                // Unwrap is safe, because Branch must exist
-                ref_branch.target().unwrap()
-            }
-        };
+        let oid = git_ref.id();
+        self.repo.checkout_tree(&git_ref.into_object()?, None)?;
         self.repo.set_head_detached(oid)?;
         Ok(())
     }
