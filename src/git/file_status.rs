@@ -5,8 +5,6 @@ pub struct FileStatus {
     pub path: String,
     /// Status of a file
     pub status: git2::Status,
-    /// Whether or not it's excluded by GitDetective
-    pub excluded: bool,
 }
 
 impl<'repo> From<git2::StatusEntry<'repo>> for FileStatus {
@@ -15,7 +13,6 @@ impl<'repo> From<git2::StatusEntry<'repo>> for FileStatus {
         Self {
             path,
             status: status_entry.status(),
-            excluded: false,
         }
     }
 }

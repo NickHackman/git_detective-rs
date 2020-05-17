@@ -20,8 +20,8 @@ pub(crate) mod signature;
 pub use signature::Signature;
 
 /// Status for a file
-pub mod file_status;
-use file_status::FileStatus;
+pub(crate) mod file_status;
+pub use file_status::FileStatus;
 
 use crate::Error;
 
@@ -255,7 +255,7 @@ impl Repo {
     pub fn ls(&self) -> Result<Vec<FileStatus>, Error> {
         let mut base_options = StatusOptions::new();
         let options = base_options
-            .show(StatusShow::IndexAndWorkdir)
+            .show(StatusShow::Index)
             .include_unmodified(true);
         Ok(self
             .repo
