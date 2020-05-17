@@ -195,7 +195,7 @@ mod git_tests {
     use super::*;
 
     #[test]
-    fn test_new() -> Result<(), Error> {
+    fn test_open() -> Result<(), Error> {
         let _ = Repo::open(".")?;
         Ok(())
     }
@@ -318,54 +318,6 @@ mod git_tests {
         }
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
-        Ok(())
-    }
-
-    #[test]
-    fn ls() -> Result<(), Error> {
-        let repo = Repo::open(".")?;
-        let list = repo.ls()?;
-        assert!(list
-            .iter()
-            .find(|stat| &stat.path == "Cargo.lock")
-            .is_some());
-        assert!(list
-            .iter()
-            .find(|stat| &stat.path == "Cargo.toml")
-            .is_some());
-        assert!(list.iter().find(|stat| &stat.path == "README.md").is_some());
-        Ok(())
-    }
-
-    #[test]
-    fn ls_exclude() -> Result<(), Error> {
-        let mut repo = Repo::open(".")?;
-        let list = repo.ls()?;
-        assert!(list
-            .iter()
-            .find(|stat| &stat.path == "Cargo.lock")
-            .is_some());
-        assert!(list
-            .iter()
-            .find(|stat| &stat.path == "Cargo.toml")
-            .is_some());
-        assert!(list.iter().find(|stat| &stat.path == "README.md").is_some());
-        repo.exclude_file("Cargo.toml");
-        repo.exclude_file("README.md");
-        repo.exclude_file("Cargo.lock");
-        let list_after = repo.ls()?;
-        assert!(!list_after
-            .iter()
-            .find(|stat| &stat.path == "Cargo.lock")
-            .is_some());
-        assert!(!list_after
-            .iter()
-            .find(|stat| &stat.path == "Cargo.toml")
-            .is_some());
-        assert!(!list_after
-            .iter()
-            .find(|stat| &stat.path == "README.md")
-            .is_some());
         Ok(())
     }
 }
