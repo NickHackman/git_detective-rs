@@ -1,6 +1,20 @@
-//! Git Detective
-//!
 //! A Library to better investigating the work done in a Git Repository
+//!
+//! # Example
+//!
+//! ```
+//! # use git_detective::Error;
+//! use git_detective::GitDetective;
+//!
+//! # fn main() -> Result<(), Error> {
+//! let repo = GitDetective::open(".")?;
+//! let contributors = repo.contributors()?;
+//!
+//! assert!(contributors.contains("Nick Hackman"));
+//! # Ok(())
+//! # }
+//! ```
+//!
 #![deny(
     missing_docs,
     unsafe_code,
@@ -15,13 +29,11 @@ use std::path::Path;
 
 use url::Url;
 
-/// Performs git operations
 pub(crate) mod git;
 pub use git::{Branch, Commit, FileStatus, Signature, Tag};
 use git::{GitReference, Repo};
 pub use git2::RepositoryState;
 
-/// Errors for Git Detective
 pub(crate) mod error;
 pub use error::Error;
 
