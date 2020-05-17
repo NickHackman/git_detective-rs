@@ -8,7 +8,7 @@ pub enum Error {
     GitError(#[from] git2::Error),
     /// Failed to parse URL to clone
     ///
-    /// Error occurs from calling `GitDetective::clone()`
+    /// Error occurs from calling [`GitDetective::clone()`](struct.GitDetective.html#method.clone)
     #[error("URL Error: `{0}`")]
     GitUrlError(#[from] url::ParseError),
     /// Repository isn't in a clean state
