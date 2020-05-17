@@ -1,32 +1,14 @@
-use crate::error::Error;
+use crate::Error;
 
-/// A Git Object
-pub enum GitReference<'repo> {
-    /// A Commit
-    Commit(git2::Commit<'repo>),
-    /// A Branch
-    Branch(git2::Branch<'repo>),
-    /// A Tag
-    Tag(git2::Tag<'repo>),
-}
-
-impl<'repo> GitReference<'repo> {
-    /// Get the name of a GitReference
-    ///
-    /// Commit: Returns the unique Identifier
-    ///
-    /// Branch: Branch Name
-    ///
-    /// Tag: Tag Name
+/// Trait bounding for [`Commit`](struct.Commit.html), [`Tag`](struct.Tag.html), and [`Branch`](struct.Branch.html)
+/// specifically for use in [`checkout`](git/struct.Repo.html#method.checkout)
+pub trait GitReference<'repo> {
+    /// Converts a GitReference into a [`git2::Object`](https://docs.rs/git2/latest/git2/struct.Object.html)
     ///
     /// # Errors
-    ///
-    /// When The name isn't valid UTF-8
-    pub fn name(&self) -> Result<String, Error> {
-        match self {
-            Self::Commit(commit) => Ok(commit.id().to_string()),
-            Self::Tag(tag) => Ok(String::from_utf8(tag.name_bytes().into())?),
-            Self::Branch(branch) => Ok(String::from_utf8(branch.name_bytes()?.into())?),
-        }
-    }
+    /// - Only in [`Branch`](struct.Branch.html) implementation
+    fn into_object(self) -> Result<git2::Object<'repo>, Error>;
+
+    /// Get the [`git2::Oid`](https://docs.rs/git2/latest/git2/struct.Oid.html) of a GitReference
+    fn id(&self) -> git2::Oid;
 }
