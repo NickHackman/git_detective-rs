@@ -195,164 +195,136 @@ mod git_tests {
     use super::*;
 
     #[test]
-    fn test_new() {
-        let git = Repo::open(".");
-        assert!(git.is_ok());
+    fn test_new() -> Result<(), Error> {
+        let _ = Repo::open(".")?;
+        Ok(())
     }
 
     #[test]
-    fn test_branches() {
-        let git = Repo::open(".");
-        assert!(git.is_ok());
-        let git = git.unwrap();
-        let branches = git.branches(None);
-        assert!(branches.is_ok());
-        let branches: Vec<Branch<'_>> = branches.unwrap().collect();
+    fn test_branches() -> Result<(), Error> {
+        let git = Repo::open(".")?;
+        let branches = git.branches(None)?;
+        let branches: Vec<Branch<'_>> = branches.collect();
         assert!(branches.len() > 0);
-        let mut branches = git.branches(None).unwrap();
+        let mut branches = git.branches(None)?;
         assert!(
             branches.any(|b| b.name().unwrap() == "master" || b.name().unwrap() == "development")
         );
+        Ok(())
     }
 
     #[test]
-    fn test_clone() {
+    fn test_clone() -> Result<(), Error> {
         let path = PathBuf::from("globset");
-        let git = Repo::clone("https://github.com/BurntSushi/globset", &path, true);
-        assert!(git.is_ok());
-        let git = git.unwrap();
-        let mut branches = git.branches(None).unwrap();
+        let git = Repo::clone("https://github.com/BurntSushi/globset", &path, true)?;
+        let mut branches = git.branches(None)?;
         assert!(branches.any(|b| b.name().unwrap() == "master"));
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
+        Ok(())
     }
 
     #[test]
-    fn test_tags() {
+    fn test_tags() -> Result<(), Error> {
         let path = PathBuf::from("xsv");
-        let git = Repo::clone("https://github.com/BurntSushi/xsv.git", &path, true);
-        assert!(git.is_ok());
-        let git = git.unwrap();
-        let tags = git.tags(None).unwrap();
+        let git = Repo::clone("https://github.com/BurntSushi/xsv.git", &path, true)?;
+        let tags = git.tags(None)?;
         assert!(tags.iter().any(|t| t.name().unwrap() == "0.13.0"));
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
+        Ok(())
     }
 
     #[test]
-    fn test_commits() {
+    fn test_commits() -> Result<(), Error> {
         let path = PathBuf::from("walkdir");
-        let git = Repo::clone("https://github.com/BurntSushi/walkdir.git", &path, true);
-        assert!(git.is_ok());
-        let git = git.unwrap();
-        let mut commits = git.commits().unwrap();
+        let git = Repo::clone("https://github.com/BurntSushi/walkdir.git", &path, true)?;
+        let mut commits = git.commits()?;
         assert!(commits.any(|c| c.id().to_string() == "29c86b2fd5876061c2e882abe71db07c3656b2c8"));
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
+        Ok(())
     }
 
     #[test]
-    fn test_contibutors() {
+    fn test_contibutors() -> Result<(), Error> {
         let path = PathBuf::from("imdb-rename");
-        let git = Repo::clone("https://github.com/BurntSushi/imdb-rename.git", &path, true);
-        assert!(git.is_ok());
-        let git = git.unwrap();
-        let contributors = git.contributors().unwrap();
+        let git = Repo::clone("https://github.com/BurntSushi/imdb-rename.git", &path, true)?;
+        let contributors = git.contributors()?;
         assert!(contributors.contains("Andrew Gallant"));
         assert!(contributors.contains("Samuel Walladge"));
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
+        Ok(())
     }
 
     #[test]
-    fn checkout_tag() {
+    fn checkout_tag() -> Result<(), Error> {
         let path = PathBuf::from("cursive");
-        let clone = Repo::clone("https://github.com/gyscos/cursive.git", &path, true);
-        assert!(clone.is_ok());
-        let repo = clone.unwrap();
-        let tags_result = repo.tags(Some("v0.14.0"));
-        assert!(tags_result.is_ok());
-        let tags = tags_result.unwrap();
+        let repo = Repo::clone("https://github.com/gyscos/cursive.git", &path, true)?;
+        let tags = repo.tags(Some("v0.14.0"))?;
         assert_eq!(tags.len(), 1);
         for tag in tags {
-            let checkout_result = repo.checkout(tag);
-            assert!(checkout_result.is_ok());
+            let _ = repo.checkout(tag)?;
         }
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
+        Ok(())
     }
 
     #[test]
-    fn checkout_commit() {
+    fn checkout_commit() -> Result<(), Error> {
         let path = PathBuf::from("awesome-rust");
-        let clone = Repo::clone(
+        let repo = Repo::clone(
             "https://github.com/rust-unofficial/awesome-rust.git",
             &path,
             true,
-        );
-        assert!(clone.is_ok());
-        let repo = clone.unwrap();
-        let commits_result = repo.commits();
-        assert!(commits_result.is_ok());
-        let mut commits = commits_result.unwrap();
+        )?;
+        let mut commits = repo.commits()?;
         let commit_option =
             commits.find(|c| c.id().to_string() == "bc7268a41e6cf7cc5391b1fbfec8f1394c5d88b6");
         assert!(commit_option.is_some());
         let commit = commit_option.unwrap();
-        let checkout_result = repo.checkout(commit);
-        assert!(checkout_result.is_ok());
+        let _ = repo.checkout(commit)?;
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
+        Ok(())
     }
 
     #[test]
-    fn checkout_branch() {
+    fn checkout_branch() -> Result<(), Error> {
         let path = PathBuf::from("rust-book");
-        let clone = Repo::clone("https://github.com/rust-lang/book.git", &path, true);
-        assert!(clone.is_ok());
-        let repo = clone.unwrap();
-        let branches_result = repo.branches(Some(git2::BranchType::Remote));
-        assert!(branches_result.is_ok());
-        let mut branches = branches_result.unwrap();
+        let repo = Repo::clone("https://github.com/rust-lang/book.git", &path, true)?;
+        let mut branches = repo.branches(Some(git2::BranchType::Remote))?;
         let branch_option = branches.find(|c| c.name().unwrap() == "origin/gh-pages");
         assert!(branch_option.is_some());
         let branch = branch_option.unwrap();
-        let checkout_result = repo.checkout(branch);
-        assert!(checkout_result.is_ok());
+        let _ = repo.checkout(branch)?;
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
+        Ok(())
     }
 
     #[test]
-    fn checkout_tag_then_different_tag() {
+    fn checkout_tag_then_different_tag() -> Result<(), Error> {
         let path = PathBuf::from("spotify-tui");
-        let clone = Repo::clone("https://github.com/Rigellute/spotify-tui.git", &path, true);
-        assert!(clone.is_ok());
-        let repo = clone.unwrap();
-        let tags_result = repo.tags(Some("v0.10.0"));
-        assert!(tags_result.is_ok());
-        let tags = tags_result.unwrap();
+        let repo = Repo::clone("https://github.com/Rigellute/spotify-tui.git", &path, true)?;
+        let tags = repo.tags(Some("v0.10.0"))?;
         assert_eq!(tags.len(), 1);
-        let tags_result = repo.tags(Some("v0.9.0"));
-        assert!(tags_result.is_ok());
-        let tags = tags_result.unwrap();
+        let tags = repo.tags(Some("v0.9.0"))?;
         assert_eq!(tags.len(), 1);
         for tag in tags {
-            let checkout_result = repo.checkout(tag);
-            assert!(checkout_result.is_ok());
+            let _ = repo.checkout(tag)?;
         }
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
+        Ok(())
     }
 
     #[test]
-    fn ls() {
-        let repo_result = Repo::open(".");
-        assert!(repo_result.is_ok());
-        let repo = repo_result.unwrap();
-        let list_result = repo.ls();
-        assert!(list_result.is_ok());
-        let list = list_result.unwrap();
+    fn ls() -> Result<(), Error> {
+        let repo = Repo::open(".")?;
+        let list = repo.ls()?;
         assert!(list
             .iter()
             .find(|stat| &stat.path == "Cargo.lock")
@@ -362,16 +334,13 @@ mod git_tests {
             .find(|stat| &stat.path == "Cargo.toml")
             .is_some());
         assert!(list.iter().find(|stat| &stat.path == "README.md").is_some());
+        Ok(())
     }
 
     #[test]
-    fn ls_exclude() {
-        let repo_result = Repo::open(".");
-        assert!(repo_result.is_ok());
-        let mut repo = repo_result.unwrap();
-        let list_result = repo.ls();
-        assert!(list_result.is_ok());
-        let list = list_result.unwrap();
+    fn ls_exclude() -> Result<(), Error> {
+        let mut repo = Repo::open(".")?;
+        let list = repo.ls()?;
         assert!(list
             .iter()
             .find(|stat| &stat.path == "Cargo.lock")
@@ -384,29 +353,19 @@ mod git_tests {
         repo.exclude_file("Cargo.toml");
         repo.exclude_file("README.md");
         repo.exclude_file("Cargo.lock");
-        let list_after_result = repo.ls();
-        assert!(list_after_result.is_ok());
-        let list_after = list_after_result.unwrap();
-        assert_eq!(
-            list_after
-                .iter()
-                .find(|stat| &stat.path == "Cargo.lock")
-                .is_some(),
-            false
-        );
-        assert_eq!(
-            list_after
-                .iter()
-                .find(|stat| &stat.path == "Cargo.toml")
-                .is_some(),
-            false
-        );
-        assert_eq!(
-            list_after
-                .iter()
-                .find(|stat| &stat.path == "README.md")
-                .is_some(),
-            false
-        );
+        let list_after = repo.ls()?;
+        assert!(!list_after
+            .iter()
+            .find(|stat| &stat.path == "Cargo.lock")
+            .is_some());
+        assert!(!list_after
+            .iter()
+            .find(|stat| &stat.path == "Cargo.toml")
+            .is_some());
+        assert!(!list_after
+            .iter()
+            .find(|stat| &stat.path == "README.md")
+            .is_some());
+        Ok(())
     }
 }

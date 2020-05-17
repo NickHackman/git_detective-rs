@@ -8,25 +8,25 @@ mod git_detective_integration_tests {
     use git_detective::GitDetective;
 
     #[test]
-    fn clone() {
+    fn clone() -> Result<(), Error> {
         let path = "git_detective_cloned_integration_tests";
 
-        let repo = GitDetective::clone(
+        let _ = GitDetective::clone(
             "https://github.com/NickHackman/Git-Detective.git",
             path,
             false,
-        );
-        assert!(repo.is_ok());
+        )?;
 
         // Clean up cloned repository
         let result = remove_dir_all(path);
         assert!(result.is_ok());
+        Ok(())
     }
 
     #[test]
-    fn open() {
-        let repo = GitDetective::open(".");
-        assert!(repo.is_ok());
+    fn open() -> Result<(), Error> {
+        let _ = GitDetective::open(".")?;
+        Ok(())
     }
 
     #[test]
@@ -51,5 +51,16 @@ mod git_detective_integration_tests {
         let error = repo.err().unwrap();
         let expected = Error::GitUrlError(url::ParseError::Overflow);
         assert_eq!(discriminant(&error), discriminant(&expected));
+    }
+
+    #[test]
+    fn branches() -> Result<(), Error> {
+        let repo = GitDetective::open(".")?;
+        let mut branches = repo.branches()?;
+        assert!(branches.any(|branch| {
+            let b_name = branch.name().unwrap();
+            b_name == "development" || b_name == "master"
+        }));
+        Ok(())
     }
 }
