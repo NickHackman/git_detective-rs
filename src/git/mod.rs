@@ -37,15 +37,6 @@ impl Repo {
     /// Consturcts a Repository from the local filesystem
     ///
     /// Recursively goes up directories until a git repo is found
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use git_detective::git::Repo;
-    ///
-    /// let repo_result = Repo::open(".");
-    /// assert!(repo_result.is_ok());
-    /// ```
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
         Ok(Self {
             repo: Repository::discover(path)?,
@@ -54,25 +45,6 @@ impl Repo {
     }
 
     /// List Branches
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use std::fs::remove_dir_all;
-    ///
-    /// use git_detective::git::{Repo};
-    /// use git_detective::git::git_reference::GitReference;
-    ///
-    /// let path = "bspwm";
-    ///
-    /// let repo = Repo::clone("https://github.com/baskerville/bspwm.git", path, true).unwrap();
-    /// for branch in repo.branches(None).unwrap() {
-    ///   println!("{}", branch.name().unwrap());
-    /// }
-    ///
-    /// // Remove Git Repository
-    /// remove_dir_all(path);
-    /// ```
     pub fn branches(
         &self,
         filter: Option<git2::BranchType>,
@@ -85,28 +57,6 @@ impl Repo {
     }
 
     /// List Commits
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use std::fs::remove_dir_all;
-    ///
-    /// use git_detective::git::{Repo};
-    /// use git_detective::git::git_reference::GitReference;
-    ///
-    /// let path = "tui-rs";
-    ///
-    /// let repo = Repo::clone("https://github.com/fdehau/tui-rs.git", path, true).unwrap();
-    /// for commit in repo.commits().unwrap() {
-    ///   match commit {
-    ///     GitReference::Commit(commit) => println!("{:?}", commit.message_raw_bytes()),
-    ///     _ => panic!("Expected only commits"),
-    ///   }
-    /// }
-    ///
-    /// // Remove Git Repository
-    /// remove_dir_all(path);
-    /// ```
     pub fn commits(&self) -> Result<impl Iterator<Item = Commit<'_>>, Error> {
         let mut rev_walk = self.repo.revwalk()?;
         rev_walk.push_head()?;
@@ -118,25 +68,6 @@ impl Repo {
     /// List Contributors
     ///
     /// **NOTE**: If author name isn't valid UTF-8 they will be filtered out
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use std::fs::remove_dir_all;
-    ///
-    /// use git_detective::git::{Repo};
-    ///
-    /// let path = "exa";
-    ///
-    /// let repo = Repo::clone("https://github.com/ogham/exa.git", path, true).unwrap();
-    /// let contributors = repo.contributors().unwrap();
-    /// for contributor in contributors {
-    ///   println!("{}", contributor);
-    /// }
-    ///
-    /// // Remove Git Repository
-    /// remove_dir_all(path);
-    /// ```
     pub fn contributors(&self) -> Result<HashSet<String>, Error> {
         let mut rev_walk = self.repo.revwalk()?;
         rev_walk.push_head()?;
@@ -154,25 +85,6 @@ impl Repo {
     /// List tags
     ///
     /// **NOTE**: If a Tag has a name that isn't valid UTF-8 it is filtered out
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use std::fs::remove_dir_all;
-    ///
-    /// use git_detective::git::{Repo};
-    /// use git_detective::git::git_reference::GitReference;
-    ///
-    /// let path = "polybar";
-    ///
-    /// let repo = Repo::clone("https://github.com/polybar/polybar.git", path, true).unwrap();
-    /// for tag in repo.tags(None).unwrap() {
-    ///   println!("{}", tag.name().unwrap());
-    /// }
-    ///
-    /// // Remove Git Repository
-    /// remove_dir_all(path);
-    /// ```
     pub fn tags(&self, pattern: Option<&str>) -> Result<Vec<Tag<'_>>, Error> {
         let names = self.repo.tag_names(pattern)?;
         Ok(names
@@ -186,21 +98,6 @@ impl Repo {
     }
 
     /// Clones a Repository Recursively
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use git_detective::git::Repo;
-    /// use std::fs::remove_dir_all;
-    ///
-    /// let path = "TrojanHorse";
-    ///
-    /// let repo = Repo::clone("https://github.com/jklypchak13/TrojanHorse.git", path, true);
-    /// assert!(repo.is_ok());
-    ///
-    /// // Cleanup the cloned repository
-    /// remove_dir_all(path);
-    /// ```
     pub fn clone<S: AsRef<str>, P: AsRef<Path>>(
         url: S,
         path: P,
@@ -255,7 +152,7 @@ impl Repo {
     pub fn ls(&self) -> Result<Vec<FileStatus>, Error> {
         let mut base_options = StatusOptions::new();
         let options = base_options
-            .show(StatusShow::Index)
+            .show(StatusShow::IndexAndWorkdir)
             .include_unmodified(true);
         Ok(self
             .repo
@@ -310,12 +207,11 @@ mod git_tests {
         let git = git.unwrap();
         let branches = git.branches(None);
         assert!(branches.is_ok());
-        let branches: Vec<GitReference<'_>> = branches.unwrap().collect();
+        let branches: Vec<Branch<'_>> = branches.unwrap().collect();
         assert!(branches.len() > 0);
         let mut branches = git.branches(None).unwrap();
-        assert!(
-            branches.any(|b| b.name().unwrap() == "master" || b.name().unwrap() == "development")
-        );
+        assert!(branches.any(|b| b.name().unwrap().unwrap() == "master"
+            || b.name().unwrap().unwrap() == "development"));
     }
 
     #[test]
@@ -325,7 +221,7 @@ mod git_tests {
         assert!(git.is_ok());
         let git = git.unwrap();
         let mut branches = git.branches(None).unwrap();
-        assert!(branches.any(|b| b.name().unwrap() == "master"));
+        assert!(branches.any(|b| b.name().unwrap().unwrap() == "master"));
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
     }
@@ -349,7 +245,7 @@ mod git_tests {
         assert!(git.is_ok());
         let git = git.unwrap();
         let mut commits = git.commits().unwrap();
-        assert!(commits.any(|c| c.name().unwrap() == "29c86b2fd5876061c2e882abe71db07c3656b2c8"));
+        assert!(commits.any(|c| c.id().to_string() == "29c86b2fd5876061c2e882abe71db07c3656b2c8"));
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
     }
@@ -377,8 +273,10 @@ mod git_tests {
         assert!(tags_result.is_ok());
         let tags = tags_result.unwrap();
         assert_eq!(tags.len(), 1);
-        let checkout_result = repo.checkout(&tags[0]);
-        assert!(checkout_result.is_ok());
+        for tag in tags {
+            let checkout_result = repo.checkout(tag);
+            assert!(checkout_result.is_ok());
+        }
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
     }
@@ -397,10 +295,10 @@ mod git_tests {
         assert!(commits_result.is_ok());
         let mut commits = commits_result.unwrap();
         let commit_option =
-            commits.find(|c| c.name().unwrap() == "bc7268a41e6cf7cc5391b1fbfec8f1394c5d88b6");
+            commits.find(|c| c.id().to_string() == "bc7268a41e6cf7cc5391b1fbfec8f1394c5d88b6");
         assert!(commit_option.is_some());
         let commit = commit_option.unwrap();
-        let checkout_result = repo.checkout(&commit);
+        let checkout_result = repo.checkout(commit);
         assert!(checkout_result.is_ok());
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
@@ -415,10 +313,10 @@ mod git_tests {
         let branches_result = repo.branches(Some(git2::BranchType::Remote));
         assert!(branches_result.is_ok());
         let mut branches = branches_result.unwrap();
-        let branch_option = branches.find(|c| c.name().unwrap() == "origin/gh-pages");
+        let branch_option = branches.find(|c| c.name().unwrap().unwrap() == "origin/gh-pages");
         assert!(branch_option.is_some());
         let branch = branch_option.unwrap();
-        let checkout_result = repo.checkout(&branch);
+        let checkout_result = repo.checkout(branch);
         assert!(checkout_result.is_ok());
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
@@ -434,14 +332,14 @@ mod git_tests {
         assert!(tags_result.is_ok());
         let tags = tags_result.unwrap();
         assert_eq!(tags.len(), 1);
-        let checkout_result = repo.checkout(&tags[0]);
-        assert!(checkout_result.is_ok());
         let tags_result = repo.tags(Some("v0.9.0"));
         assert!(tags_result.is_ok());
         let tags = tags_result.unwrap();
         assert_eq!(tags.len(), 1);
-        let checkout_result = repo.checkout(&tags[0]);
-        assert!(checkout_result.is_ok());
+        for tag in tags {
+            let checkout_result = repo.checkout(tag);
+            assert!(checkout_result.is_ok());
+        }
         let removed = remove_dir_all(path);
         assert!(removed.is_ok());
     }

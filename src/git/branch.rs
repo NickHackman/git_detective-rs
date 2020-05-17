@@ -15,8 +15,9 @@ use crate::Error;
 /// let gd = GitDetective::open(".")?;
 /// let branches = gd.branches()?;
 /// for branch in branches {
-///   println!("{}", branch.name()?);
+///   println!("{}", branch.name()??);
 /// }
+/// # Ok(())
 /// # }
 /// ```
 pub struct Branch<'repo> {

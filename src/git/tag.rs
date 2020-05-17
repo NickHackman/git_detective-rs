@@ -18,6 +18,7 @@ use crate::Signature;
 /// for tag in tags {
 ///   println!("{}", tag.name()?);
 /// }
+/// # Ok(())
 /// # }
 /// ```
 pub struct Tag<'repo> {

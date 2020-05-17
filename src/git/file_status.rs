@@ -1,5 +1,5 @@
 /// The State of a file
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct FileStatus {
     /// Path to a file
     pub path: String,

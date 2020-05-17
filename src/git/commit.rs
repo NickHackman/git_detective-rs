@@ -18,6 +18,7 @@ use crate::Signature;
 /// for commit in commits {
 ///   println!("{}", commit.author().name()?);
 /// }
+/// # Ok(())
 /// # }
 /// ```
 pub struct Commit<'repo> {

@@ -4,7 +4,7 @@ mod git_detective_integration_tests {
     use std::mem::discriminant;
     use std::path::PathBuf;
 
-    use git_detective::error::Error;
+    use git_detective::Error;
     use git_detective::GitDetective;
 
     #[test]

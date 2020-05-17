@@ -115,6 +115,7 @@ impl GitDetective {
     /// let contributors = repo.contributors()?;
     ///
     /// assert!(contributors.contains("Nick Hackman"));
+    /// # Ok(())
     /// # }
     /// ```
     pub fn contributors(&self) -> Result<HashSet<String>, Error> {
@@ -132,6 +133,7 @@ impl GitDetective {
     /// # fn main() -> Result<(), Error> {
     /// let repo = GitDetective::open(".")?;
     /// let tags = repo.tags()?;
+    /// # Ok(())
     /// # }
     /// ```
     pub fn tags(&self) -> Result<Vec<Tag<'_>>, Error> {
@@ -148,9 +150,10 @@ impl GitDetective {
     ///
     /// # fn main() -> Result<(), Error> {
     /// let repo = GitDetective::open(".")?;
-    /// let branches = repo.branches()?;
+    /// let mut branches = repo.branches()?;
     ///
-    /// assert!(branches.any(|branch| branch.name().unwrap() == "development"));
+    /// assert!(branches.any(|branch| branch.name().unwrap().unwrap() == "development"));
+    /// # Ok(())
     /// # }
     /// ```
     pub fn branches(&self) -> Result<impl Iterator<Item = Branch<'_>>, Error> {
@@ -168,6 +171,7 @@ impl GitDetective {
     /// # fn main() -> Result<(), Error> {
     /// let repo = GitDetective::open(".")?;
     /// let commits = repo.commits()?;
+    /// # Ok(())
     /// # }
     /// ```
     pub fn commits(&self) -> Result<impl Iterator<Item = Commit<'_>>, Error> {
@@ -187,6 +191,7 @@ impl GitDetective {
     /// let state = repo.state();
     ///
     /// println!("{:?}", state);
+    /// # Ok(())
     /// # }
     /// ```
     pub fn state(&self) -> RepositoryState {
@@ -224,6 +229,7 @@ impl GitDetective {
     /// for file in files {
     ///   println!("{}", file.path);
     /// }
+    /// # Ok(())
     /// # }
     /// ```
     ///
@@ -242,14 +248,15 @@ impl GitDetective {
     /// use git_detective::GitDetective;
     ///
     /// # fn main() -> Result<(), Error> {
-    /// let repo = GitDetective::open(".")?;
+    /// let mut repo = GitDetective::open(".")?;
     /// let before_files = repo.ls()?;
     ///
     /// repo.exclude_file("README.md");
     /// repo.exclude_file("Cargo.toml");
     ///
-    /// let after_files = repo.ls()?;
-    /// assert!(before_files.len() < after_files.len());
+    /// let mut after_files = repo.ls()?;
+    /// assert!(after_files.iter().all(|file| &file.path != "README.md" && &file.path != "Cargo.toml"));
+    /// # Ok(())
     /// # }
     /// ```
     pub fn exclude_file<S: Into<String>>(&mut self, file: S) {

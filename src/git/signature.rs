@@ -17,6 +17,7 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 ///   let author = commit.author();
 ///   println!("Name = {}, Email = {}", author.name()?, author.email()?);
 /// }
+/// # Ok(())
 /// # }
 /// ```
 pub struct Signature<'repo> {
