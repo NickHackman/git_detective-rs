@@ -1,11 +1,9 @@
 [package]
-name = "git_detective"
+name = "gd"
 version = "0.1.0"
 authors = ["NickHackman <snickhackman@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-git2 = "0.13.5"
-url = "2.1.1"
-thiserror = "1.0.16"
-chrono = "0.4.11"
+clap = "2.33.1"
+git_detective = { path = "../" }
