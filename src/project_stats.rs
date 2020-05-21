@@ -77,7 +77,7 @@ impl ProjectStats {
         match self.stats.entry(name.into()) {
             Entry::Occupied(mut occupied) => {
                 let stats_map = occupied.get_mut();
-                let lang_stats = stats_map.entry(lang).or_insert(Stats::default());
+                let lang_stats = stats_map.entry(lang).or_insert_with(Stats::default);
                 *lang_stats += stats;
             }
             Entry::Vacant(vacant) => {

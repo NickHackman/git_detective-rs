@@ -317,13 +317,10 @@ impl GitDetective {
                     .map(ProjectStats::from)
                     .ok()
             })
-            .reduce(
-                || ProjectStats::default(),
-                |mut a, b| {
-                    a += b;
-                    a
-                },
-            ))
+            .reduce(ProjectStats::default, |mut a, b| {
+                a += b;
+                a
+            }))
     }
 
     /// Count the final contibutions for a file
@@ -396,7 +393,7 @@ impl GitDetective {
                     };
                     let stats = contributions
                         .entry(final_author.clone())
-                        .or_insert(Stats::default());
+                        .or_insert_with(Stats::default);
                     *stats += line_type;
                 }
                 contributions
