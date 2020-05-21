@@ -1,4 +1,4 @@
-//! A Library to better investigating the work done in a Git Repository
+//! A Library to aide in investigating the work done in a Git Repository
 //!
 //! # Example
 //!
