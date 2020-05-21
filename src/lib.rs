@@ -24,18 +24,26 @@
     unused_must_use
 )]
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
+use rayon::prelude::*;
+use tokei::{Config, LanguageType};
 use url::Url;
 
 pub(crate) mod git;
+use git::{Blame, GitReference, Repo};
 pub use git::{Branch, Commit, FileStatus, Signature, Tag};
-use git::{GitReference, Repo};
 pub use git2::RepositoryState;
 
 pub(crate) mod error;
 pub use error::Error;
+
+pub(crate) mod stats;
+pub use stats::Stats;
+
+pub(crate) mod project_stats;
+pub use project_stats::ProjectStats;
 
 /// Enables more in-depth investigating of Git Repositories
 ///
@@ -237,8 +245,8 @@ impl GitDetective {
     /// use git_detective::GitDetective;
     ///
     /// # fn main() -> Result<(), Error> {
-    /// let repo = GitDetective::open(".")?;
-    /// let files = repo.ls()?;
+    /// let gd = GitDetective::open(".")?;
+    /// let files = gd.ls()?;
     ///
     /// for file in files {
     ///   println!("{}", file.path);
@@ -251,6 +259,103 @@ impl GitDetective {
     /// - Couldn't read Git Repository
     pub fn ls(&self) -> Result<Vec<FileStatus>, Error> {
         self.repo.ls()
+    }
+
+    /// TODO: docs
+    pub fn final_contributions(&self) -> Result<ProjectStats, Error> {
+        let files = self.repo.ls()?;
+        let blamed_files: Vec<_> = files
+            .iter()
+            .filter_map(|file| {
+                self.repo
+                    .blame_file(&file.path)
+                    .map(|blame| (&file.path, Blame::from(blame)))
+                    .ok()
+            })
+            .collect();
+        let file_stats: Vec<_> = blamed_files
+            .par_iter()
+            .filter_map(|(path, blame)| GitDetective::_final_contributions_file(path, blame).ok())
+            .collect();
+        Ok(file_stats
+            .into_iter()
+            .fold(ProjectStats::new(), |mut project_stats, (lang, stats)| {
+                stats.into_iter().for_each(|(author, stats)| {
+                    project_stats.insert(author, lang, stats);
+                });
+                project_stats
+            }))
+    }
+
+    /// Count the final contibutions for a file
+    ///
+    /// Final contributions takes the last commit, and completely
+    /// ignores current untracked changes in the git repository.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use git_detective::Error;
+    /// use git_detective::GitDetective;
+    ///
+    /// # fn main() -> Result<(), Error> {
+    /// let gd = GitDetective::open(".")?;
+    /// let (lang, final_contribs) = gd.final_contributions_file(file!())?;
+    ///
+    /// println!("Language = {}", lang);
+    /// println!("final contributions = {:?}", final_contribs);
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    /// - Failed to determine language of file
+    /// - Failed to read file
+    /// - Failed to git blame
+    pub fn final_contributions_file<P: AsRef<Path>>(
+        &self,
+        path: P,
+    ) -> Result<(&'static str, HashMap<String, Stats>), Error> {
+        let path = path.as_ref();
+        let blame = self.repo.blame_file(path)?;
+        GitDetective::_final_contributions_file(path, &Blame::from(blame))
+    }
+
+    /// TODO: Docs
+    fn _final_contributions_file<P: AsRef<Path>>(
+        path: P,
+        blame: &Blame,
+    ) -> Result<(&'static str, HashMap<String, Stats>), Error> {
+        let path = path.as_ref();
+        let config = Config::default();
+
+        let lang_type = LanguageType::from_path(path, &config).unwrap_or(LanguageType::Text);
+        let annotations = lang_type.annotate_file(path, &config).unwrap();
+
+        let contributions = blame
+            .iter()
+            .fold(HashMap::new(), |mut contributions, hunk| {
+                let final_author = match hunk.author.clone() {
+                    Ok(name) => name,
+                    // TODO: Log Non-UTF8 name, instead of silently ignoring
+                    Err(_) => return contributions,
+                };
+
+                for line_num in hunk.final_range() {
+                    let line_type = match annotations.get(&line_num) {
+                        Some(line_type) => line_type,
+                        None => continue,
+                    };
+                    let stats = contributions
+                        .entry(final_author.clone())
+                        .or_insert(Stats::default());
+                    *stats += line_type;
+                }
+                contributions
+            });
+
+        Ok((lang_type.name(), contributions))
     }
 
     /// Exclude a file from all further [`ls`](struct.GitDetective.html#method.ls)
