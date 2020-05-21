@@ -8,4 +8,5 @@ fn main() -> Result<(), Error> {
     let gd = GitDetective::clone("https://github.com/serde-rs/serde.git", path, true)?;
     let _ = gd.final_contributions()?;
     remove_dir_all(path).unwrap();
+    Ok(())
 }
