@@ -317,9 +317,9 @@ impl GitDetective {
                 }
                 None
             })
-            .reduce(ProjectStats::default, |mut a, b| {
-                a += b;
-                a
+            .reduce(ProjectStats::default, |mut stats_lhs, stats_rhs| {
+                stats_lhs += stats_rhs;
+                stats_lhs
             }))
     }
 
