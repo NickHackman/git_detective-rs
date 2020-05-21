@@ -5,7 +5,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use git_detective::GitDetective;
 
 fn clap_benchmark(c: &mut Criterion) {
-    let gd = GitDetective::clone("https://github.com/serde-rs/serde", "serde", true).unwrap();
+    let mut gd = GitDetective::clone("https://github.com/serde-rs/serde", "serde", true).unwrap();
     c.bench_function("Final Contributions - Serde Benchmark", |b| {
         b.iter(|| gd.final_contributions())
     });

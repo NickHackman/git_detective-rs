@@ -23,9 +23,6 @@ pub use signature::Signature;
 pub(crate) mod file_status;
 pub use file_status::FileStatus;
 
-pub(crate) mod blame;
-pub use blame::{Blame, BlameHunk};
-
 use crate::Error;
 
 /// A Git Repository

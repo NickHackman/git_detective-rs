@@ -7,7 +7,7 @@
 //! use git_detective::GitDetective;
 //!
 //! # fn main() -> Result<(), Error> {
-//! let gd = GitDetective::open(".")?;
+//! let mut gd = GitDetective::open(".")?;
 //!
 //! let project_stats = gd.final_contributions()?;
 //!
@@ -38,8 +38,8 @@ use tokei::{Config, LanguageType};
 use url::Url;
 
 pub(crate) mod git;
-use git::{Blame, GitReference, Repo};
 pub use git::{Branch, Commit, FileStatus, Signature, Tag};
+use git::{GitReference, Repo};
 pub use git2::{RepositoryState, Status};
 
 pub(crate) mod error;
@@ -279,7 +279,7 @@ impl GitDetective {
     /// use git_detective::GitDetective;
     ///
     /// # fn main() -> Result<(), Error> {
-    /// let gd = GitDetective::open(".")?;
+    /// let mut gd = GitDetective::open(".")?;
     /// let project_stats = gd.final_contributions()?;
     ///
     /// for contributor in project_stats.contributors() {
@@ -299,24 +299,23 @@ impl GitDetective {
     /// # Errors
     /// - Failed to read file [`IOError`](enum.Error.html#variant.IOError)
     /// - Failed to git blame [`GitError`](enum.Error.html#variant.GitError)
-    pub fn final_contributions(&self) -> Result<ProjectStats, Error> {
+    pub fn final_contributions(&mut self) -> Result<ProjectStats, Error> {
         let files = self.repo.ls()?;
-        let blamed_files: Vec<_> = files
-            .iter()
-            .filter_map(|file| {
-                self.repo
-                    .blame_file(&file.path)
-                    .map(|blame| (&file.path, Blame::from(blame)))
-                    .ok()
-            })
-            .collect();
         let workdir = self.repo.workdir();
-        Ok(blamed_files
+        let repo = std::sync::Mutex::new(&mut self.repo);
+        Ok(files
             .par_iter()
-            .filter_map(|(path, blame)| {
-                GitDetective::_final_contributions_file(&workdir, path, blame)
-                    .map(ProjectStats::from)
-                    .ok()
+            .filter_map(|file| {
+                if let Ok(repo) = repo.lock() {
+                    if let Ok(blame) = repo.blame_file(&file.path) {
+                        return GitDetective::_final_contributions_file(
+                            &workdir, &file.path, blame,
+                        )
+                        .map(ProjectStats::from)
+                        .ok();
+                    }
+                }
+                None
             })
             .reduce(ProjectStats::default, |mut a, b| {
                 a += b;
@@ -361,7 +360,7 @@ impl GitDetective {
         let path = path.as_ref();
         let blame = self.repo.blame_file(path)?;
         let workdir = self.repo.workdir();
-        GitDetective::_final_contributions_file(&workdir, path, &Blame::from(blame))
+        GitDetective::_final_contributions_file(&workdir, path, blame)
     }
 
     /// Internal Function
@@ -370,7 +369,7 @@ impl GitDetective {
     fn _final_contributions_file<Dir: Into<PathBuf>, P: AsRef<Path>>(
         workdir: Dir,
         path: P,
-        blame: &Blame,
+        blame: git2::Blame<'_>,
     ) -> Result<(&'static str, HashMap<String, Stats>), Error> {
         let workdir = workdir.into();
         let path = path.as_ref();
@@ -385,13 +384,15 @@ impl GitDetective {
         let contributions = blame
             .iter()
             .fold(HashMap::new(), |mut contributions, hunk| {
-                let final_author = match hunk.author.clone() {
-                    Ok(name) => name,
+                let final_sig = hunk.final_signature();
+                let final_author = match final_sig.name() {
+                    Some(name) => name.to_string(),
                     // TODO: Log Non-UTF8 name, instead of silently ignoring
-                    Err(_) => return contributions,
+                    None => return contributions,
                 };
 
-                for line_num in hunk.final_range() {
+                let end = hunk.final_start_line() + hunk.lines_in_hunk();
+                for line_num in hunk.final_start_line()..end {
                     let line_type = match annotations.get(&line_num) {
                         Some(line_type) => line_type,
                         None => continue,
