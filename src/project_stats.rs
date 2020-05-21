@@ -1,4 +1,5 @@
 use std::collections::{hash_map::Entry, HashMap};
+use std::ops::AddAssign;
 
 use crate::stats::Stats;
 
@@ -83,6 +84,29 @@ impl ProjectStats {
                 let mut lang_stat = HashMap::new();
                 lang_stat.insert(lang, stats);
                 vacant.insert(lang_stat);
+            }
+        }
+    }
+}
+
+#[doc(hidden)]
+impl From<(&'static str, HashMap<String, Stats>)> for ProjectStats {
+    fn from(lang_stats: (&'static str, HashMap<String, Stats>)) -> Self {
+        let (lang, file_stats) = lang_stats;
+        let mut project_stats = Self::new();
+        for (author, stats) in file_stats {
+            project_stats.insert(author, lang, stats);
+        }
+        project_stats
+    }
+}
+
+#[doc(hidden)]
+impl AddAssign for ProjectStats {
+    fn add_assign(&mut self, other: Self) {
+        for (lang, contrib_stats) in other.stats {
+            for (author, stats) in contrib_stats {
+                self.insert(&*lang, author, stats);
             }
         }
     }

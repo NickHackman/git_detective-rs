@@ -310,18 +310,20 @@ impl GitDetective {
                     .ok()
             })
             .collect();
-        let file_stats: Vec<_> = blamed_files
+        Ok(blamed_files
             .par_iter()
-            .filter_map(|(path, blame)| GitDetective::_final_contributions_file(path, blame).ok())
-            .collect();
-        Ok(file_stats
-            .into_iter()
-            .fold(ProjectStats::new(), |mut project_stats, (lang, stats)| {
-                stats.into_iter().for_each(|(author, stats)| {
-                    project_stats.insert(author, lang, stats);
-                });
-                project_stats
-            }))
+            .filter_map(|(path, blame)| {
+                GitDetective::_final_contributions_file(path, blame)
+                    .map(ProjectStats::from)
+                    .ok()
+            })
+            .reduce(
+                || ProjectStats::default(),
+                |mut a, b| {
+                    a += b;
+                    a
+                },
+            ))
     }
 
     /// Count the final contibutions for a file
