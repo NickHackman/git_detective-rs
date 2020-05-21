@@ -18,5 +18,5 @@ tokei = {git = "https://github.com/NickHackman/tokei.git", branch = "annotate-fi
 criterion = "0.3.2"
 
 [[bench]]
-name = "my_benchmark"
+name = "git_detective"
 harness = false
