@@ -31,7 +31,7 @@
 )]
 
 use std::collections::{HashMap, HashSet};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use rayon::prelude::*;
 use tokei::{Config, LanguageType};
@@ -310,10 +310,11 @@ impl GitDetective {
                     .ok()
             })
             .collect();
+        let workdir = self.repo.workdir();
         Ok(blamed_files
             .par_iter()
             .filter_map(|(path, blame)| {
-                GitDetective::_final_contributions_file(path, blame)
+                GitDetective::_final_contributions_file(&workdir, path, blame)
                     .map(ProjectStats::from)
                     .ok()
             })
@@ -359,22 +360,26 @@ impl GitDetective {
     ) -> Result<(&'static str, HashMap<String, Stats>), Error> {
         let path = path.as_ref();
         let blame = self.repo.blame_file(path)?;
-        GitDetective::_final_contributions_file(path, &Blame::from(blame))
+        let workdir = self.repo.workdir();
+        GitDetective::_final_contributions_file(&workdir, path, &Blame::from(blame))
     }
 
     /// Internal Function
     ///
     /// Performs final contributions counting for a file
-    fn _final_contributions_file<P: AsRef<Path>>(
+    fn _final_contributions_file<Dir: Into<PathBuf>, P: AsRef<Path>>(
+        workdir: Dir,
         path: P,
         blame: &Blame,
     ) -> Result<(&'static str, HashMap<String, Stats>), Error> {
+        let workdir = workdir.into();
         let path = path.as_ref();
+        let full_path = workdir.join(path);
         let config = Config::default();
 
-        let lang_type = LanguageType::from_path(path, &config).unwrap_or(LanguageType::Text);
+        let lang_type = LanguageType::from_path(&full_path, &config).unwrap_or(LanguageType::Text);
         let annotations = lang_type
-            .annotate_file(path, &config)
+            .annotate_file(full_path, &config)
             .map_err(|(err, path)| Error::IOError(err, path))?;
 
         let contributions = blame
