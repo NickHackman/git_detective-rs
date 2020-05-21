@@ -1,22 +1,19 @@
+use std::fs::remove_dir_all;
+
 use criterion::{criterion_group, criterion_main, Criterion};
 
 use git_detective::GitDetective;
 
-fn gd_benchmark(c: &mut Criterion) {
-    let gd = GitDetective::open(".").unwrap();
-    c.bench_function("Final Contributions - GitDetective Benchmark", |b| {
+fn clap_benchmark(c: &mut Criterion) {
+    let gd = GitDetective::clone("https://github.com/serde-rs/serde", "serde", true).unwrap();
+    c.bench_function("Final Contributions - Serde Benchmark", |b| {
         b.iter(|| gd.final_contributions())
     });
+    remove_dir_all("serde").unwrap();
 }
 
-fn gd_lib_benchmark(c: &mut Criterion) {
-    let gd = GitDetective::open(".").unwrap();
-    c.bench_function("Final Contributions Lib.rs - GitDetective Benchmark", |b| {
-        b.iter(|| gd.final_contributions_file("src/lib.rs"))
-    });
-}
+criterion_group!(name = final_contributions_clap;
+                 config = Criterion::default().sample_size(10);
+                 targets = clap_benchmark);
 
-criterion_group!(final_contributions_file, gd_lib_benchmark);
-criterion_group!(final_contributions_gd, gd_benchmark);
-
-criterion_main!(final_contributions_file, final_contributions_gd);
+criterion_main!(final_contributions_clap);
