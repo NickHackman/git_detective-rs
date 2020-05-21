@@ -7,10 +7,16 @@
 //! use git_detective::GitDetective;
 //!
 //! # fn main() -> Result<(), Error> {
-//! let repo = GitDetective::open(".")?;
-//! let contributors = repo.contributors()?;
+//! let gd = GitDetective::open(".")?;
 //!
-//! assert!(contributors.contains("Nick Hackman"));
+//! let project_stats = gd.final_contributions()?;
+//!
+//! let nh_contributions = match project_stats.contribs_by_name("Nick Hackman") {
+//!   Some(contribs) => contribs,
+//!   None => panic!("Nick Hackman didn't contribute to this repository"),
+//! };
+//!
+//! println!("Nick Hackman's Contributions = {:?}", nh_contributions);
 //! # Ok(())
 //! # }
 //! ```
@@ -34,7 +40,7 @@ use url::Url;
 pub(crate) mod git;
 use git::{Blame, GitReference, Repo};
 pub use git::{Branch, Commit, FileStatus, Signature, Tag};
-pub use git2::RepositoryState;
+pub use git2::{RepositoryState, Status};
 
 pub(crate) mod error;
 pub use error::Error;
@@ -261,7 +267,38 @@ impl GitDetective {
         self.repo.ls()
     }
 
-    /// TODO: docs
+    /// Count the final contibutions for an entire git repository
+    ///
+    /// Final contributions takes the last commit, and completely
+    /// ignores current untracked changes in the git repository.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use git_detective::Error;
+    /// use git_detective::GitDetective;
+    ///
+    /// # fn main() -> Result<(), Error> {
+    /// let gd = GitDetective::open(".")?;
+    /// let project_stats = gd.final_contributions()?;
+    ///
+    /// for contributor in project_stats.contributors() {
+    ///   println!("{}", contributor);
+    /// }
+    ///
+    /// println!("{}", project_stats.total_lines());
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # All of my `code` is "Plain Text"
+    ///
+    /// `Git-Detective` fallsback to interpreting files as "Plain Text" when no file type can be determined.
+    /// This is common for files like `Cargo.lock` and `LICENSE`.
+    ///
+    /// # Errors
+    /// - Failed to read file [`IOError`](enum.Error.html#variant.IOError)
+    /// - Failed to git blame [`GitError`](enum.Error.html#variant.GitError)
     pub fn final_contributions(&self) -> Result<ProjectStats, Error> {
         let files = self.repo.ls()?;
         let blamed_files: Vec<_> = files
@@ -309,10 +346,14 @@ impl GitDetective {
     /// # }
     /// ```
     ///
+    /// # All of my `code` is "Plain Text"
+    ///
+    /// `Git-Detective` fallsback to interpreting files as "Plain Text" when no file type can be determined.
+    /// This is common for files like `Cargo.lock` and `LICENSE`.
+    ///
     /// # Errors
-    /// - Failed to determine language of file
-    /// - Failed to read file
-    /// - Failed to git blame
+    /// - Failed to read file [`IOError`](enum.Error.html#variant.IOError)
+    /// - Failed to git blame [`GitError`](enum.Error.html#variant.GitError)
     pub fn final_contributions_file<P: AsRef<Path>>(
         &self,
         path: P,
@@ -322,7 +363,9 @@ impl GitDetective {
         GitDetective::_final_contributions_file(path, &Blame::from(blame))
     }
 
-    /// TODO: Docs
+    /// Internal Function
+    ///
+    /// Performs final contributions counting for a file
     fn _final_contributions_file<P: AsRef<Path>>(
         path: P,
         blame: &Blame,
@@ -331,7 +374,9 @@ impl GitDetective {
         let config = Config::default();
 
         let lang_type = LanguageType::from_path(path, &config).unwrap_or(LanguageType::Text);
-        let annotations = lang_type.annotate_file(path, &config).unwrap();
+        let annotations = lang_type
+            .annotate_file(path, &config)
+            .map_err(|(err, path)| Error::IOError(err, path))?;
 
         let contributions = blame
             .iter()
@@ -358,7 +403,8 @@ impl GitDetective {
         Ok((lang_type.name(), contributions))
     }
 
-    /// Exclude a file from all further [`ls`](struct.GitDetective.html#method.ls)
+    /// Exclude a file from all further [`ls`](struct.GitDetective.html#method.ls) and
+    /// [`final_contributions`](struct.GitDetective.html#method.final_contributions)
     ///
     /// # Example
     ///

@@ -2,16 +2,35 @@ use std::ops::{Add, AddAssign};
 
 use tokei::LineType;
 
-/// TODO: Docs
+/// Statistics for a file or collection of files
+///
+/// # Example
+///
+/// ```
+/// # use git_detective::Error;
+/// use git_detective::GitDetective;
+///
+/// # fn main() -> Result<(), Error> {
+/// let gd = GitDetective::open(".")?;
+/// let (lang, final_contribs) = gd.final_contributions_file(file!())?;
+///
+/// println!("Language = {}", lang);
+/// for (contributor, stats) in final_contribs {
+///   println!("{} wrote Total lines = {}", contributor, stats.lines);
+/// }
+///
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Default, Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Stats {
-    /// TODO: Docs
+    /// The number of total lines
     pub lines: usize,
-    /// TODO: Docs
+    /// The number of blank lines
     pub blanks: usize,
-    /// TODO: Docs
+    /// The number of comment lines
     pub comments: usize,
-    /// TODO: Docs
+    /// The number of lines of code
     pub code: usize,
 }
 
@@ -37,6 +56,7 @@ impl Add for Stats {
     }
 }
 
+#[doc(hidden)]
 impl AddAssign<LineType> for Stats {
     fn add_assign(&mut self, other: LineType) {
         match other {
@@ -48,6 +68,7 @@ impl AddAssign<LineType> for Stats {
     }
 }
 
+#[doc(hidden)]
 impl AddAssign<&LineType> for Stats {
     fn add_assign(&mut self, other: &LineType) {
         match other {

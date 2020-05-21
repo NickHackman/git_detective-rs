@@ -5,6 +5,25 @@ use crate::stats::Stats;
 /// Project Stats
 ///
 /// Contains contributions for all contributors separated on language
+///
+/// # Example
+///
+/// ```
+/// # use git_detective::Error;
+/// use git_detective::GitDetective;
+///
+/// # fn main() -> Result<(), Error> {
+/// let gd = GitDetective::open(".")?;
+/// let project_stats = gd.final_contributions()?;
+///
+/// for contributor in project_stats.contributors() {
+///   println!("{}", contributor);
+/// }
+///
+/// println!("{}", project_stats.total_lines());
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug, Default)]
 pub struct ProjectStats {
     stats: HashMap<String, HashMap<&'static str, Stats>>,
