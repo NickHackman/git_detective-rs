@@ -34,8 +34,10 @@ fn construct_git_detective(matches: ArgMatches) -> Result<GitDetective, Error> {
 
 fn main() {
     let matches = clap();
-    let _git_detective = match construct_git_detective(matches) {
+    let gd = match construct_git_detective(matches) {
         Ok(detective) => detective,
         Err(e) => panic!("{:?}", e),
     };
+    let contributions = gd.final_contributions().unwrap();
+    println!("{:?}", contributions);
 }
