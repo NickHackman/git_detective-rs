@@ -1,5 +1,7 @@
 //! Errors for GitDetective
 
+use std::path::PathBuf;
+
 /// All possible Errors that can occur in Git Detective
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -21,4 +23,11 @@ pub enum Error {
     /// Could be a Branch name, commit hash, etc
     #[error("Non UTF-8 Error: named `{0:?}`")]
     NonUTF8String(#[from] std::string::FromUtf8Error),
+
+    /// IO Error
+    ///
+    /// Occurrred in [`final_contributions`](struct.GitDetective.html#method.final_contributions) or
+    /// [`final_contributions_file`](struct.GitDetective.html#method.final_contributions_file)
+    #[error("`{0}` in `{1:?}`")]
+    IOError(std::io::Error, PathBuf),
 }
