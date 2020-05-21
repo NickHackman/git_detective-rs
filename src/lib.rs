@@ -7,10 +7,16 @@
 //! use git_detective::GitDetective;
 //!
 //! # fn main() -> Result<(), Error> {
-//! let repo = GitDetective::open(".")?;
-//! let contributors = repo.contributors()?;
+//! let gd = GitDetective::open(".")?;
 //!
-//! assert!(contributors.contains("Nick Hackman"));
+//! let project_stats = gd.final_contributions()?;
+//!
+//! let nh_contributions = match project_stats.contribs_by_name("Nick Hackman") {
+//!   Some(contribs) => contribs,
+//!   None => panic!("Nick Hackman didn't contribute to this repository"),
+//! };
+//!
+//! println!("Nick Hackman's Contributions = {:?}", nh_contributions);
 //! # Ok(())
 //! # }
 //! ```
@@ -24,18 +30,26 @@
     unused_must_use
 )]
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
+use rayon::prelude::*;
+use tokei::{Config, LanguageType};
 use url::Url;
 
 pub(crate) mod git;
+use git::{Blame, GitReference, Repo};
 pub use git::{Branch, Commit, FileStatus, Signature, Tag};
-use git::{GitReference, Repo};
-pub use git2::RepositoryState;
+pub use git2::{RepositoryState, Status};
 
 pub(crate) mod error;
 pub use error::Error;
+
+pub(crate) mod stats;
+pub use stats::Stats;
+
+pub(crate) mod project_stats;
+pub use project_stats::ProjectStats;
 
 /// Enables more in-depth investigating of Git Repositories
 ///
@@ -237,8 +251,8 @@ impl GitDetective {
     /// use git_detective::GitDetective;
     ///
     /// # fn main() -> Result<(), Error> {
-    /// let repo = GitDetective::open(".")?;
-    /// let files = repo.ls()?;
+    /// let gd = GitDetective::open(".")?;
+    /// let files = gd.ls()?;
     ///
     /// for file in files {
     ///   println!("{}", file.path);
@@ -253,7 +267,143 @@ impl GitDetective {
         self.repo.ls()
     }
 
-    /// Exclude a file from all further [`ls`](struct.GitDetective.html#method.ls)
+    /// Count the final contibutions for an entire git repository
+    ///
+    /// Final contributions takes the last commit, and completely
+    /// ignores current untracked changes in the git repository.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use git_detective::Error;
+    /// use git_detective::GitDetective;
+    ///
+    /// # fn main() -> Result<(), Error> {
+    /// let gd = GitDetective::open(".")?;
+    /// let project_stats = gd.final_contributions()?;
+    ///
+    /// for contributor in project_stats.contributors() {
+    ///   println!("{}", contributor);
+    /// }
+    ///
+    /// println!("{}", project_stats.total_lines());
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # All of my `code` is "Plain Text"
+    ///
+    /// `Git-Detective` fallsback to interpreting files as "Plain Text" when no file type can be determined.
+    /// This is common for files like `Cargo.lock` and `LICENSE`.
+    ///
+    /// # Errors
+    /// - Failed to read file [`IOError`](enum.Error.html#variant.IOError)
+    /// - Failed to git blame [`GitError`](enum.Error.html#variant.GitError)
+    pub fn final_contributions(&self) -> Result<ProjectStats, Error> {
+        let files = self.repo.ls()?;
+        let blamed_files: Vec<_> = files
+            .iter()
+            .filter_map(|file| {
+                self.repo
+                    .blame_file(&file.path)
+                    .map(|blame| (&file.path, Blame::from(blame)))
+                    .ok()
+            })
+            .collect();
+        Ok(blamed_files
+            .par_iter()
+            .filter_map(|(path, blame)| {
+                GitDetective::_final_contributions_file(path, blame)
+                    .map(ProjectStats::from)
+                    .ok()
+            })
+            .reduce(ProjectStats::default, |mut a, b| {
+                a += b;
+                a
+            }))
+    }
+
+    /// Count the final contibutions for a file
+    ///
+    /// Final contributions takes the last commit, and completely
+    /// ignores current untracked changes in the git repository.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use git_detective::Error;
+    /// use git_detective::GitDetective;
+    ///
+    /// # fn main() -> Result<(), Error> {
+    /// let gd = GitDetective::open(".")?;
+    /// let (lang, final_contribs) = gd.final_contributions_file(file!())?;
+    ///
+    /// println!("Language = {}", lang);
+    /// println!("final contributions = {:?}", final_contribs);
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # All of my `code` is "Plain Text"
+    ///
+    /// `Git-Detective` fallsback to interpreting files as "Plain Text" when no file type can be determined.
+    /// This is common for files like `Cargo.lock` and `LICENSE`.
+    ///
+    /// # Errors
+    /// - Failed to read file [`IOError`](enum.Error.html#variant.IOError)
+    /// - Failed to git blame [`GitError`](enum.Error.html#variant.GitError)
+    pub fn final_contributions_file<P: AsRef<Path>>(
+        &self,
+        path: P,
+    ) -> Result<(&'static str, HashMap<String, Stats>), Error> {
+        let path = path.as_ref();
+        let blame = self.repo.blame_file(path)?;
+        GitDetective::_final_contributions_file(path, &Blame::from(blame))
+    }
+
+    /// Internal Function
+    ///
+    /// Performs final contributions counting for a file
+    fn _final_contributions_file<P: AsRef<Path>>(
+        path: P,
+        blame: &Blame,
+    ) -> Result<(&'static str, HashMap<String, Stats>), Error> {
+        let path = path.as_ref();
+        let config = Config::default();
+
+        let lang_type = LanguageType::from_path(path, &config).unwrap_or(LanguageType::Text);
+        let annotations = lang_type
+            .annotate_file(path, &config)
+            .map_err(|(err, path)| Error::IOError(err, path))?;
+
+        let contributions = blame
+            .iter()
+            .fold(HashMap::new(), |mut contributions, hunk| {
+                let final_author = match hunk.author.clone() {
+                    Ok(name) => name,
+                    // TODO: Log Non-UTF8 name, instead of silently ignoring
+                    Err(_) => return contributions,
+                };
+
+                for line_num in hunk.final_range() {
+                    let line_type = match annotations.get(&line_num) {
+                        Some(line_type) => line_type,
+                        None => continue,
+                    };
+                    let stats = contributions
+                        .entry(final_author.clone())
+                        .or_insert_with(Stats::default);
+                    *stats += line_type;
+                }
+                contributions
+            });
+
+        Ok((lang_type.name(), contributions))
+    }
+
+    /// Exclude a file from all further [`ls`](struct.GitDetective.html#method.ls) and
+    /// [`final_contributions`](struct.GitDetective.html#method.final_contributions)
     ///
     /// # Example
     ///

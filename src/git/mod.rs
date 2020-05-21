@@ -23,6 +23,9 @@ pub use signature::Signature;
 pub(crate) mod file_status;
 pub use file_status::FileStatus;
 
+pub(crate) mod blame;
+pub use blame::{Blame, BlameHunk};
+
 use crate::Error;
 
 /// A Git Repository
@@ -184,6 +187,10 @@ impl Repo {
         self.repo.checkout_tree(&git_ref.into_object()?, None)?;
         self.repo.set_head_detached(oid)?;
         Ok(())
+    }
+
+    pub fn blame_file<P: AsRef<Path>>(&self, path: P) -> Result<git2::Blame<'_>, Error> {
+        Ok(self.repo.blame_file(&path.as_ref(), None)?)
     }
 }
 
