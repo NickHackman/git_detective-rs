@@ -57,18 +57,6 @@ impl Add for Stats {
 }
 
 #[doc(hidden)]
-impl AddAssign<LineType> for Stats {
-    fn add_assign(&mut self, other: LineType) {
-        match other {
-            LineType::Blank => self.blanks += 1,
-            LineType::Code => self.code += 1,
-            LineType::Comment => self.comments += 1,
-        }
-        self.lines += 1;
-    }
-}
-
-#[doc(hidden)]
 impl AddAssign<&LineType> for Stats {
     fn add_assign(&mut self, other: &LineType) {
         match other {

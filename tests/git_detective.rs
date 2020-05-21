@@ -181,7 +181,7 @@ mod git_detective_integration_tests {
         assert!(final_contribs.contains_key("Nick Hackman"));
         let nh_contribs = final_contribs.get("Nick Hackman").unwrap();
         assert!(nh_contribs.lines >= 175);
-        assert!(nh_contribs.blanks >= 15);
+        assert!(nh_contribs.blanks >= 14);
         assert!(nh_contribs.comments >= 1);
         Ok(())
     }
@@ -190,7 +190,15 @@ mod git_detective_integration_tests {
     fn final_contributions() -> Result<(), Error> {
         let gd = GitDetective::open(".")?;
         let project_stats = gd.final_contributions()?;
-        println!("{:#?}", project_stats);
+        assert!(project_stats
+            .contributors()
+            .any(|name| name == "NickHackman"));
+        let nh_stats = project_stats.contribs_by_name("NickHackman");
+        assert!(nh_stats.is_some());
+        assert!(project_stats.total_lines() > 1000);
+        let total_nh_stats = project_stats.total_contribs_by_name("NickHackman").unwrap();
+        assert!(total_nh_stats.lines > 1000);
+        assert!(total_nh_stats.code > 1000);
         Ok(())
     }
 }
