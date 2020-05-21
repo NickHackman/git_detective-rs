@@ -192,11 +192,13 @@ mod git_detective_integration_tests {
         let project_stats = gd.final_contributions()?;
         assert!(project_stats
             .contributors()
-            .any(|name| name == "NickHackman"));
-        let nh_stats = project_stats.contribs_by_name("NickHackman");
+            .any(|name| name == "Nick Hackman"));
+        let nh_stats = project_stats.contribs_by_name("Nick Hackman");
         assert!(nh_stats.is_some());
         assert!(project_stats.total_lines() > 1000);
-        let total_nh_stats = project_stats.total_contribs_by_name("NickHackman").unwrap();
+        let total_nh_stats = project_stats
+            .total_contribs_by_name("Nick Hackman")
+            .unwrap();
         assert!(total_nh_stats.lines > 1000);
         assert!(total_nh_stats.code > 1000);
         Ok(())
