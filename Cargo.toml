@@ -9,4 +9,7 @@ git2 = "0.13.5"
 url = "2.1.1"
 thiserror = "1.0.16"
 chrono = "0.4.11"
+rayon = "1.3.0"
+
+# Personal fork of Tokei in order to annotate files
 tokei = {git = "https://github.com/NickHackman/tokei.git", branch = "annotate-files"}
