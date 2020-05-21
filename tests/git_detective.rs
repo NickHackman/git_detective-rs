@@ -188,7 +188,7 @@ mod git_detective_integration_tests {
 
     #[test]
     fn final_contributions() -> Result<(), Error> {
-        let gd = GitDetective::open(".")?;
+        let mut gd = GitDetective::open(".")?;
         let project_stats = gd.final_contributions()?;
         assert!(project_stats
             .contributors()

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::iter::Iterator;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use git2::{Repository, StatusOptions, StatusShow};
 
@@ -22,9 +22,6 @@ pub use signature::Signature;
 /// Status for a file
 pub(crate) mod file_status;
 pub use file_status::FileStatus;
-
-pub(crate) mod blame;
-pub use blame::{Blame, BlameHunk};
 
 use crate::Error;
 
@@ -187,6 +184,12 @@ impl Repo {
         self.repo.checkout_tree(&git_ref.into_object()?, None)?;
         self.repo.set_head_detached(oid)?;
         Ok(())
+    }
+
+    /// Get workdir
+    pub fn workdir(&self) -> PathBuf {
+        // Safe to unwrap because we don't allow bare repositories
+        self.repo.workdir().unwrap().into()
     }
 
     pub fn blame_file<P: AsRef<Path>>(&self, path: P) -> Result<git2::Blame<'_>, Error> {

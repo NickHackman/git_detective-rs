@@ -5,8 +5,10 @@ use git_detective::{Error, GitDetective};
 fn main() -> Result<(), Error> {
     let path = "serde-example";
 
-    let gd = GitDetective::clone("https://github.com/serde-rs/serde.git", path, true)?;
-    let _ = gd.final_contributions()?;
+    let mut gd = GitDetective::clone("https://github.com/serde-rs/serde.git", path, true)?;
+    let contributions = gd.final_contributions()?;
+    println!("{:#?}", contributions);
+    println!("Total lines = {}", contributions.total_lines());
     remove_dir_all(path).unwrap();
     Ok(())
 }

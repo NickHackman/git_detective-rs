@@ -14,7 +14,7 @@ use crate::stats::Stats;
 /// use git_detective::GitDetective;
 ///
 /// # fn main() -> Result<(), Error> {
-/// let gd = GitDetective::open(".")?;
+/// let mut gd = GitDetective::open(".")?;
 /// let project_stats = gd.final_contributions()?;
 ///
 /// for contributor in project_stats.contributors() {
