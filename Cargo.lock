@@ -925,7 +925,7 @@ dependencies = [
 [[package]]
 name = "tokei"
 version = "11.2.0"
-source = "git+https://github.com/NickHackman/tokei.git?branch=annotate-files#e4430b01350d6dbedf46dabc38710d7aa994dc13"
+source = "git+https://github.com/NickHackman/tokei.git?branch=annotate-files#244049144f831d9b78ab743c2ae65210ca1380e3"
 dependencies = [
  "aho-corasick",
  "crossbeam-channel",
