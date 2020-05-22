@@ -38,8 +38,9 @@ use tokei::{Config, LanguageType};
 use url::Url;
 
 pub(crate) mod git;
+use git::GitReference;
 pub use git::{Branch, Commit, FileStatus, Signature, Tag};
-use git::{GitReference, Repo};
+use git2::{Repository, StatusOptions, StatusShow};
 pub use git2::{RepositoryState, Status};
 
 pub(crate) mod error;
@@ -77,7 +78,8 @@ pub use project_stats::ProjectStats;
 /// # remove_dir_all(path);
 /// ```
 pub struct GitDetective {
-    repo: Repo,
+    repository: Repository,
+    excluded_files: HashSet<String>,
 }
 
 impl GitDetective {
@@ -95,8 +97,10 @@ impl GitDetective {
     /// # Errors
     /// - Couldn't find a Git Repository
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
-        let repo = Repo::open(path)?;
-        Ok(Self { repo })
+        Ok(Self {
+            repository: Repository::discover(path)?,
+            excluded_files: HashSet::new(),
+        })
     }
 
     /// Clone a remote Git Repository
@@ -124,8 +128,16 @@ impl GitDetective {
         recursive: bool,
     ) -> Result<Self, Error> {
         let valid_url = Url::parse(url.as_ref())?;
-        let repo = Repo::clone(valid_url.as_str(), path.as_ref(), recursive)?;
-        Ok(Self { repo })
+        let repository = if recursive {
+            Repository::clone_recurse(url.as_ref(), path)?
+        } else {
+            Repository::clone(valid_url.as_ref(), path)?
+        };
+
+        Ok(Self {
+            repository,
+            excluded_files: HashSet::new(),
+        })
     }
 
     /// `HashSet` of all contributors of Repository
@@ -145,7 +157,17 @@ impl GitDetective {
     /// # }
     /// ```
     pub fn contributors(&self) -> Result<HashSet<String>, Error> {
-        self.repo.contributors()
+        let mut rev_walk = self.repository.revwalk()?;
+        rev_walk.push_head()?;
+        Ok(rev_walk
+            .flatten()
+            .filter_map(|id| self.repository.find_commit(id).ok())
+            .fold(HashSet::new(), |mut set, commit| {
+                if let Some(name) = commit.author().name() {
+                    set.insert(name.to_string());
+                }
+                set
+            }))
     }
 
     /// All tags of Repository
@@ -163,7 +185,15 @@ impl GitDetective {
     /// # }
     /// ```
     pub fn tags(&self) -> Result<Vec<Tag<'_>>, Error> {
-        self.repo.tags(None)
+        let names = self.repository.tag_names(None)?;
+        Ok(names
+            .iter()
+            .filter_map(|name| name)
+            .filter_map(move |name| match self.repository.revparse_single(name) {
+                Ok(obj) => obj.into_tag().map(Tag::from).ok(),
+                Err(_) => None,
+            })
+            .collect())
     }
 
     /// All branches for Repository
@@ -185,7 +215,11 @@ impl GitDetective {
     /// # }
     /// ```
     pub fn branches(&self) -> Result<impl Iterator<Item = Branch<'_>>, Error> {
-        self.repo.branches(None)
+        Ok(self
+            .repository
+            .branches(None)?
+            .flatten()
+            .map(|(branch, _)| Branch::from(branch)))
     }
 
     /// All commits for Repository
@@ -203,7 +237,11 @@ impl GitDetective {
     /// # }
     /// ```
     pub fn commits(&self) -> Result<impl Iterator<Item = Commit<'_>>, Error> {
-        self.repo.commits()
+        let mut rev_walk = self.repository.revwalk()?;
+        rev_walk.push_head()?;
+        Ok(rev_walk
+            .flatten()
+            .filter_map(move |id| self.repository.find_commit(id).map(Commit::from).ok()))
     }
 
     /// Current state of Repository
@@ -223,7 +261,7 @@ impl GitDetective {
     /// # }
     /// ```
     pub fn state(&self) -> RepositoryState {
-        self.repo.state()
+        self.repository.state()
     }
 
     /// Checkout a [`Tag`](struct.Tag.html), [`Branch`](struct.Branch.html), or [`Commit`](struct.Commit.html)
@@ -239,7 +277,15 @@ impl GitDetective {
         &self,
         git_ref: GitRef,
     ) -> Result<(), Error> {
-        self.repo.checkout(git_ref)
+        let state = self.state();
+        if state != RepositoryState::Clean {
+            return Err(Error::UncleanState(state));
+        }
+        let oid = git_ref.id();
+        self.repository
+            .checkout_tree(&git_ref.into_object()?, None)?;
+        self.repository.set_head_detached(oid)?;
+        Ok(())
     }
 
     /// List files in the Index
@@ -264,7 +310,28 @@ impl GitDetective {
     /// # Errors
     /// - Couldn't read Git Repository
     pub fn ls(&self) -> Result<Vec<FileStatus>, Error> {
-        self.repo.ls()
+        let mut base_options = StatusOptions::new();
+        let options = base_options
+            .show(StatusShow::IndexAndWorkdir)
+            .include_unmodified(true);
+        Ok(self
+            .repository
+            .statuses(Some(options))?
+            .iter()
+            .map(FileStatus::from)
+            .filter(|file_stat| !self.excluded_files.contains(&file_stat.path))
+            .collect())
+    }
+
+    /// Get workdir
+    fn workdir(&self) -> PathBuf {
+        // Safe to unwrap because we don't allow bare repositories
+        self.repository.workdir().unwrap().into()
+    }
+
+    /// Get the blame for a file
+    fn blame_file<P: AsRef<Path>>(&self, path: P) -> Result<git2::Blame<'_>, Error> {
+        Ok(self.repository.blame_file(&path.as_ref(), None)?)
     }
 
     /// Count the final contibutions for an entire git repository
@@ -300,9 +367,9 @@ impl GitDetective {
     /// - Failed to read file [`IOError`](enum.Error.html#variant.IOError)
     /// - Failed to git blame [`GitError`](enum.Error.html#variant.GitError)
     pub fn final_contributions(&mut self) -> Result<ProjectStats, Error> {
-        let files = self.repo.ls()?;
-        let workdir = self.repo.workdir();
-        let repo = std::sync::Mutex::new(&mut self.repo);
+        let files = self.ls()?;
+        let workdir = self.workdir();
+        let repo = std::sync::Mutex::new(self);
         Ok(files
             .par_iter()
             .filter_map(|file| {
@@ -358,8 +425,8 @@ impl GitDetective {
         path: P,
     ) -> Result<(&'static str, HashMap<String, Stats>), Error> {
         let path = path.as_ref();
-        let blame = self.repo.blame_file(path)?;
-        let workdir = self.repo.workdir();
+        let blame = self.blame_file(path)?;
+        let workdir = self.workdir();
         GitDetective::_final_contributions_file(&workdir, path, blame)
     }
 
@@ -430,6 +497,6 @@ impl GitDetective {
     /// # }
     /// ```
     pub fn exclude_file<S: Into<String>>(&mut self, file: S) {
-        self.repo.exclude_file(file);
+        self.excluded_files.insert(file.into());
     }
 }

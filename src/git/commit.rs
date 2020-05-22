@@ -62,6 +62,11 @@ impl<'repo> Commit<'_> {
             .summary_bytes()
             .map(|summary| String::from_utf8(summary.into()))
     }
+
+    /// Get the [`Oid`](https://docs.rs/git2/latest/git2/struct.Oid.html) of a `Commit`
+    pub fn id(&self) -> git2::Oid {
+        self.inner.id()
+    }
 }
 
 impl<'repo> GitReference<'repo> for Commit<'repo> {
