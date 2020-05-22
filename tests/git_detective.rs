@@ -122,20 +122,6 @@ mod git_detective_integration_tests {
     }
 
     #[test]
-    fn checkout_tag_then_different_tag() -> Result<(), Error> {
-        let path = PathBuf::from("spotify-tui");
-        let gd = GitDetective::clone("https://github.com/Rigellute/spotify-tui.git", &path, true)?;
-        let tags = gd.tags()?;
-        assert!(tags.len() > 1);
-        for tag in tags {
-            let _ = gd.checkout(tag)?;
-        }
-        let removed = remove_dir_all(path);
-        assert!(removed.is_ok());
-        Ok(())
-    }
-
-    #[test]
     fn checkout_tag() -> Result<(), Error> {
         let path = PathBuf::from("cursive");
         let gd = GitDetective::clone("https://github.com/gyscos/cursive.git", &path, true)?;
@@ -201,6 +187,95 @@ mod git_detective_integration_tests {
             .unwrap();
         assert!(total_nh_stats.lines > 1000);
         assert!(total_nh_stats.code > 1000);
+        Ok(())
+    }
+
+    #[test]
+    fn branches() -> Result<(), Error> {
+        let gd = GitDetective::open(".")?;
+        let branches = gd.branches()?;
+        assert!(branches.count() > 0);
+        Ok(())
+    }
+
+    #[test]
+    fn test_tags() -> Result<(), Error> {
+        let path = PathBuf::from("xsv");
+        let gd = GitDetective::clone("https://github.com/BurntSushi/xsv.git", &path, true)?;
+        let tags = gd.tags()?;
+        assert!(tags.iter().any(|t| t.name().unwrap() == "0.13.0"));
+        let removed = remove_dir_all(path);
+        assert!(removed.is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn test_commits() -> Result<(), Error> {
+        let path = PathBuf::from("walkdir");
+        let gd = GitDetective::clone("https://github.com/BurntSushi/walkdir.git", &path, true)?;
+        let mut commits = gd.commits()?;
+        assert!(commits.any(|c| c.id().to_string() == "29c86b2fd5876061c2e882abe71db07c3656b2c8"));
+        let removed = remove_dir_all(path);
+        assert!(removed.is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn test_contibutors() -> Result<(), Error> {
+        let path = PathBuf::from("imdb-rename");
+        let gd = GitDetective::clone("https://github.com/BurntSushi/imdb-rename.git", &path, true)?;
+        let contributors = gd.contributors()?;
+        assert!(contributors.contains("Andrew Gallant"));
+        assert!(contributors.contains("Samuel Walladge"));
+        let removed = remove_dir_all(path);
+        assert!(removed.is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn checkout_commit() -> Result<(), Error> {
+        let path = PathBuf::from("awesome-rust");
+        let gd = GitDetective::clone(
+            "https://github.com/rust-unofficial/awesome-rust.git",
+            &path,
+            true,
+        )?;
+        let mut commits = gd.commits()?;
+        let commit_option =
+            commits.find(|c| c.id().to_string() == "bc7268a41e6cf7cc5391b1fbfec8f1394c5d88b6");
+        assert!(commit_option.is_some());
+        let commit = commit_option.unwrap();
+        let _ = gd.checkout(commit)?;
+        let removed = remove_dir_all(path);
+        assert!(removed.is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn checkout_branch() -> Result<(), Error> {
+        let path = PathBuf::from("rust-book");
+        let gd = GitDetective::clone("https://github.com/rust-lang/book.git", &path, true)?;
+        let mut branches = gd.branches()?;
+        let branch_option = branches.find(|c| c.name().unwrap() == "origin/gh-pages");
+        assert!(branch_option.is_some());
+        let branch = branch_option.unwrap();
+        let _ = gd.checkout(branch)?;
+        let removed = remove_dir_all(path);
+        assert!(removed.is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn checkout_tag_then_different_tag() -> Result<(), Error> {
+        let path = PathBuf::from("spotify-tui");
+        let gd = GitDetective::clone("https://github.com/Rigellute/spotify-tui.git", &path, true)?;
+        let tags = gd.tags()?;
+        assert!(tags.len() > 1);
+        for tag in tags {
+            let _ = gd.checkout(tag)?;
+        }
+        let removed = remove_dir_all(path);
+        assert!(removed.is_ok());
         Ok(())
     }
 }
