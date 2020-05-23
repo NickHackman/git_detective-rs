@@ -1,5 +1,7 @@
 use std::string::FromUtf8Error;
 
+use chrono::{DateTime, NaiveDateTime, Utc};
+
 use crate::error::Error;
 use crate::git::GitReference;
 use crate::Signature;
@@ -66,6 +68,13 @@ impl<'repo> Commit<'_> {
     /// Get the [`Oid`](https://docs.rs/git2/latest/git2/struct.Oid.html) of a `Commit`
     pub fn id(&self) -> git2::Oid {
         self.inner.id()
+    }
+
+    /// Date commited
+    pub fn date(&self) -> DateTime<Utc> {
+        let timestamp = self.inner.time().seconds();
+        let naive = NaiveDateTime::from_timestamp(timestamp, 0);
+        DateTime::<Utc>::from_utc(naive, Utc)
     }
 }
 
