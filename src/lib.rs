@@ -52,6 +52,9 @@ pub use stats::Stats;
 pub(crate) mod project_stats;
 pub use project_stats::ProjectStats;
 
+pub(crate) mod diff_stats;
+pub use diff_stats::DiffStats;
+
 /// Enables more in-depth investigating of Git Repositories
 ///
 /// # Examples
@@ -498,5 +501,54 @@ impl GitDetective {
     /// ```
     pub fn exclude_file<S: Into<String>>(&mut self, file: S) {
         self.excluded_files.insert(file.into());
+    }
+
+    /// Get insertion/deletion statistics
+    ///
+    /// The same `+` and `-` deltas that Github shows in the [contributors](https://github.com/NickHackman/Git-Detective/graphs/contributors) page
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use git_detective::Error;
+    /// use git_detective::GitDetective;
+    ///
+    /// # fn main() -> Result<(), Error> {
+    /// let mut gd = GitDetective::open(".")?;
+    /// let diff_stats = gd.diff_stats()?;
+    /// for (author, diff_stat) in diff_stats {
+    ///   println!("{}: +{} -{}", author, diff_stat.insertions, diff_stat.deletions);
+    /// }
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// - Unable to walk commits
+    /// - Unable to get [`git2::Tree`](https://docs.rs/git2/latest/git2/struct.Tree.html) for a [`git2::Commit`](https://docs.rs/git2/latest/git2/struct.Commit.html)
+    /// - Unable to get the stats for a [`git2::Diff`](https://docs.rs/git2/latest/git2/struct.Diff.html)
+    pub fn diff_stats(&self) -> Result<HashMap<String, DiffStats>, Error> {
+        let mut rev_walk = self.repository.revwalk()?;
+        rev_walk.push_head()?;
+        Ok(rev_walk
+            .flatten()
+            .filter_map(|id| self.repository.find_commit(id).ok())
+            .try_fold(HashMap::new(), |mut contribs, commit| -> Result<_, Error> {
+                let old_tree = commit
+                    .parent(0)
+                    .map_or(None, |parent| parent.tree().map_or(None, |tree| Some(tree)));
+                let new_tree = commit.tree()?;
+                let diff =
+                    self.repository
+                        .diff_tree_to_tree(old_tree.as_ref(), Some(&new_tree), None)?;
+                if let Some(author) = commit.author().name() {
+                    let author = author.into();
+                    let entry = contribs.entry(author).or_insert_with(DiffStats::default);
+                    *entry += diff.stats()?;
+                }
+                Ok(contribs)
+            })?)
     }
 }
