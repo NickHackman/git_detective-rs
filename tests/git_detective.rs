@@ -291,4 +291,23 @@ mod git_detective_integration_tests {
         );
         Ok(())
     }
+
+    #[test]
+    fn files_contributed_to() -> Result<(), Error> {
+        let gd = GitDetective::open(".")?;
+        let contrib_files = gd.files_contributed_to()?;
+        assert!(contrib_files
+            .get("Nick Hackman")
+            .unwrap()
+            .contains(&PathBuf::from("src/lib.rs")));
+        assert!(contrib_files
+            .get("Nick Hackman")
+            .unwrap()
+            .contains(&PathBuf::from("README.md")));
+        assert!(contrib_files
+            .get("NickHackman")
+            .unwrap()
+            .contains(&PathBuf::from("LICENSE")));
+        Ok(())
+    }
 }

@@ -551,4 +551,60 @@ impl GitDetective {
                 Ok(contribs)
             })?)
     }
+
+    /// Get files contributed to by all Contributors in commits that are parents of `HEAD`
+    ///
+    /// All file paths are given relatively to the Git working directory
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use git_detective::Error;
+    /// use git_detective::GitDetective;
+    ///
+    /// # fn main() -> Result<(), Error> {
+    /// let mut gd = GitDetective::open(".")?;
+    /// let contrib_files = gd.files_contributed_to()?;
+    /// for (author, files) in contrib_files {
+    ///   println!("{}: {:?}", author, files);
+    /// }
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// - Unable to walk commits
+    /// - Unable to get [`git2::Tree`](https://docs.rs/git2/latest/git2/struct.Tree.html) for a [`git2::Commit`](https://docs.rs/git2/latest/git2/struct.Commit.html)
+    /// - Unable to get the stats for a [`git2::Diff`](https://docs.rs/git2/latest/git2/struct.Diff.html)
+    pub fn files_contributed_to(&self) -> Result<HashMap<String, HashSet<PathBuf>>, Error> {
+        let mut rev_walk = self.repository.revwalk()?;
+        rev_walk.push_head()?;
+        Ok(rev_walk
+            .flatten()
+            .filter_map(|id| self.repository.find_commit(id).ok())
+            .try_fold(HashMap::new(), |mut contribs, commit| -> Result<_, Error> {
+                let old_tree = commit
+                    .parent(0)
+                    .map_or(None, |parent| parent.tree().map_or(None, |tree| Some(tree)));
+                let new_tree = commit.tree()?;
+                let diff =
+                    self.repository
+                        .diff_tree_to_tree(old_tree.as_ref(), Some(&new_tree), None)?;
+
+                if let Some(author) = commit.author().name() {
+                    let author = author.into();
+                    let files = diff.deltas().fold(HashSet::new(), |mut files, delta| {
+                        if let Some(path) = delta.new_file().path() {
+                            files.insert(path.to_path_buf());
+                        }
+                        files
+                    });
+                    let prev_files = contribs.entry(author).or_insert_with(HashSet::default);
+                    *prev_files = files.union(prev_files).cloned().collect();
+                }
+                Ok(contribs)
+            })?)
+    }
 }
