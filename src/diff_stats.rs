@@ -1,6 +1,23 @@
 use std::ops::AddAssign;
 
-/// TODO: docs
+/// Insertion and Deletion statistics for Commit diffs
+///
+/// # Example
+///
+/// ```
+/// # use git_detective::Error;
+/// use git_detective::GitDetective;
+///
+/// # fn main() -> Result<(), Error> {
+/// let mut gd = GitDetective::open(".")?;
+/// let diff_stats = gd.diff_stats()?;
+/// for (author, diff_stat) in diff_stats {
+///   println!("{}: +{} -{}", author, diff_stat.insertions, diff_stat.deletions);
+/// }
+///
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct DiffStats {
     /// Lines of code inserted
