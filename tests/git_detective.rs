@@ -278,4 +278,17 @@ mod git_detective_integration_tests {
         assert!(removed.is_ok());
         Ok(())
     }
+
+    #[test]
+    fn diff_stats() -> Result<(), Error> {
+        let gd = GitDetective::open(".")?;
+        let stats_map = gd.diff_stats()?;
+        assert!(stats_map.contains_key("Nick Hackman"));
+        assert!(stats_map.contains_key("NickHackman"));
+        assert!(
+            stats_map.get("Nick Hackman").unwrap().insertions
+                > stats_map.get("NickHackman").unwrap().insertions
+        );
+        Ok(())
+    }
 }
