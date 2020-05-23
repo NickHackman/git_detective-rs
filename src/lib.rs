@@ -222,7 +222,7 @@ impl GitDetective {
             .map(|(branch, _)| Branch::from(branch)))
     }
 
-    /// All commits for Repository
+    /// All commits for Repository that are parents of `HEAD` in **reverse** order
     ///
     /// # Example
     ///
@@ -485,13 +485,13 @@ impl GitDetective {
     /// use git_detective::GitDetective;
     ///
     /// # fn main() -> Result<(), Error> {
-    /// let mut repo = GitDetective::open(".")?;
-    /// let before_files = repo.ls()?;
+    /// let mut gd = GitDetective::open(".")?;
+    /// let before_files = gd.ls()?;
     ///
-    /// repo.exclude_file("README.md");
-    /// repo.exclude_file("Cargo.toml");
+    /// gd.exclude_file("README.md");
+    /// gd.exclude_file("Cargo.toml");
     ///
-    /// let mut after_files = repo.ls()?;
+    /// let mut after_files = gd.ls()?;
     /// assert!(after_files.iter().all(|file| &file.path != "README.md" && &file.path != "Cargo.toml"));
     /// # Ok(())
     /// # }
