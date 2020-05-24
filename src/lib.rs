@@ -587,7 +587,7 @@ impl GitDetective {
             .try_fold(HashMap::new(), |mut contribs, commit| -> Result<_, Error> {
                 let old_tree = commit
                     .parent(0)
-                    .map_or(None, |parent| parent.tree().map_or(None, |tree| Some(tree)));
+                    .map_or(None, |parent| parent.tree().map_or(None, Some));
                 let new_tree = commit.tree()?;
                 let diff =
                     self.repository
