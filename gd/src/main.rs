@@ -19,7 +19,7 @@ mod cli;
 use cli::clap;
 
 mod util;
-use util::final_table;
+use util::{diff_table, final_table};
 
 fn construct_gd(matches: &ArgMatches) -> Result<GitDetective, Error> {
     let gd = match matches.subcommand() {
@@ -56,7 +56,7 @@ fn stats(matches: &ArgMatches, gd: &mut GitDetective) -> Result<(), Error> {
     }
     if matches.is_present("difference") {
         let diff_stats = gd.diff_stats()?;
-        println!("{:#?}", diff_stats);
+        diff_table(diff_stats);
     }
     Ok(())
 }
