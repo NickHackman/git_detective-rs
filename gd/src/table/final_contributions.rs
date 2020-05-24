@@ -71,7 +71,7 @@ impl fmt::Display for FinalContributionsTable {
             self.header(f)?;
             let mut total = Stats::default();
 
-            let mut lang_stats: Vec<_> = lang_map.into_iter().collect();
+            let mut lang_stats: Vec<_> = lang_map.iter().collect();
             // Sort by
             lang_stats
                 .as_mut_slice()

@@ -13,16 +13,15 @@ use std::process;
 
 use clap::ArgMatches;
 use git_detective::{Error, GitDetective};
-use term_size;
 
 mod cli;
 use cli::clap;
 
 mod util;
-use util::{diff_table, files_table};
+use util::files_table;
 
 mod table;
-use table::FinalContributionsTable;
+use table::{DiffStatsTable, FinalContributionsTable};
 
 fn construct_gd(matches: &ArgMatches) -> Result<GitDetective, Error> {
     let gd = match matches.subcommand() {
@@ -55,7 +54,7 @@ fn stats(matches: &ArgMatches, gd: &mut GitDetective) -> Result<(), Error> {
         files_table(files);
     } else if matches.is_present("difference") {
         let diff_stats = gd.diff_stats()?;
-        diff_table(diff_stats);
+        println!("{}", DiffStatsTable::new(diff_stats, dimensions));
     } else {
         let final_contribs = gd.final_contributions()?;
         println!(
