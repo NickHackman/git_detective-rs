@@ -66,6 +66,9 @@ impl FinalContributionsTable {
 
 impl fmt::Display for FinalContributionsTable {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.stats.is_empty() {
+            return Ok(());
+        }
         for (author, lang_map) in self.stats.iter() {
             self.author(f, &author)?;
             self.header(f)?;
