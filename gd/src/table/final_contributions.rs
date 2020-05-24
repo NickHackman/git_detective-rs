@@ -2,9 +2,8 @@ use std::fmt;
 
 use git_detective::{ProjectStats, Stats};
 
-use super::Table;
-
 const WIDTH: usize = 72;
+const ITEMS: usize = 6;
 
 pub struct FinalContributionsTable {
     separator_length: usize,
@@ -32,7 +31,7 @@ impl FinalContributionsTable {
             stats.code,
             stats.comments,
             stats.blanks,
-            width = self.separator_length / 6,
+            width = self.separator_length / ITEMS,
         )
     }
 
@@ -44,9 +43,7 @@ impl FinalContributionsTable {
             width = self.separator_length
         )
     }
-}
 
-impl Table for FinalContributionsTable {
     fn header(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.line_separator(f)?;
         writeln!(
@@ -57,7 +54,7 @@ impl Table for FinalContributionsTable {
             "Code",
             "Comments",
             "Blanks",
-            width = self.separator_length / 6,
+            width = self.separator_length / ITEMS,
         )?;
         self.line_separator(f)
     }
