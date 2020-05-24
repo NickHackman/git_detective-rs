@@ -12,14 +12,17 @@
 use std::process;
 
 use clap::ArgMatches;
-
 use git_detective::{Error, GitDetective};
+use term_size;
 
 mod cli;
 use cli::clap;
 
 mod util;
-use util::{diff_table, files_table, final_table};
+use util::{diff_table, files_table};
+
+mod table;
+use table::FinalContributionsTable;
 
 fn construct_gd(matches: &ArgMatches) -> Result<GitDetective, Error> {
     let gd = match matches.subcommand() {
@@ -46,6 +49,7 @@ fn run(matches: ArgMatches) -> Result<(), Error> {
 
 fn stats(matches: &ArgMatches, gd: &mut GitDetective) -> Result<(), Error> {
     let _name = matches.value_of("name");
+    let dimensions = term_size::dimensions();
     if matches.is_present("files") {
         let files = gd.files_contributed_to()?;
         files_table(files);
@@ -54,7 +58,10 @@ fn stats(matches: &ArgMatches, gd: &mut GitDetective) -> Result<(), Error> {
         diff_table(diff_stats);
     } else {
         let final_contribs = gd.final_contributions()?;
-        final_table(final_contribs);
+        println!(
+            "{}",
+            FinalContributionsTable::new(final_contribs, dimensions)
+        );
     }
     Ok(())
 }
