@@ -99,7 +99,7 @@ pub fn clap() -> ArgMatches<'static> {
                         .short("d")
                         .long("diff")
                         .help("Insertion/Deletions by contributor")
-                        .conflicts_with_all(&["files", "difference"]),
+                        .conflicts_with_all(&["files", "final"]),
                 )
                 .arg(
                     Arg::with_name("name")
