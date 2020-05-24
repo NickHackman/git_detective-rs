@@ -48,6 +48,11 @@ impl ProjectStats {
         )
     }
 
+    /// Check whether [`ProjectStats`](struct.ProjectStats.html) is empty
+    pub fn is_empty(&self) -> bool {
+        self.stats.is_empty()
+    }
+
     /// Get contributions by name broken down by language
     pub fn contribs_by_name<S: AsRef<str>>(
         &self,
