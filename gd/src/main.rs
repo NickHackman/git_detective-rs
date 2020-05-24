@@ -71,7 +71,6 @@ fn list(matches: &ArgMatches, gd: &GitDetective) -> Result<(), Error> {
         let commits: Vec<_> = gd.commits()?.collect();
         println!("{}", CommitsTable::new(commits, dimensions));
     } else if matches.is_present("tags") {
-    } else if matches.is_present("files") {
     } else if matches.is_present("branches") {
         let branches = gd.branches()?;
         for branch in branches {

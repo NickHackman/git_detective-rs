@@ -47,34 +47,27 @@ pub fn clap() -> ArgMatches<'static> {
                         .short("c")
                         .long("commits")
                         .help("List all commits")
-                        .conflicts_with_all(&["tags", "contributors", "files", "branches"]),
+                        .conflicts_with_all(&["tags", "contributors", "branches"]),
                 )
                 .arg(
                     Arg::with_name("tags")
                         .short("t")
                         .long("tags")
                         .help("List all tags")
-                        .conflicts_with_all(&["commits", "contributors", "files", "branches"]),
+                        .conflicts_with_all(&["commits", "contributors", "branches"]),
                 )
                 .arg(
                     Arg::with_name("contributors")
                         .long("contributors")
                         .help("List all contributors")
-                        .conflicts_with_all(&["commits", "tags", "files", "branches"]),
-                )
-                .arg(
-                    Arg::with_name("files")
-                        .short("f")
-                        .long("files")
-                        .help("List all files and their statuses")
-                        .conflicts_with_all(&["commits", "tags", "contributors", "branches"]),
+                        .conflicts_with_all(&["commits", "tags", "branches"]),
                 )
                 .arg(
                     Arg::with_name("branches")
                         .short("b")
                         .long("branches")
                         .help("List all branches")
-                        .conflicts_with_all(&["commits", "tags", "contributors", "files"]),
+                        .conflicts_with_all(&["commits", "tags", "contributors"]),
                 ),
         )
         .subcommand(
