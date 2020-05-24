@@ -1,4 +1,4 @@
-use std::collections::{hash_map::Entry, HashMap};
+use std::collections::{hash_map::Entry, hash_map::Iter, HashMap};
 use std::ops::AddAssign;
 
 use crate::stats::Stats;
@@ -86,6 +86,11 @@ impl ProjectStats {
                 vacant.insert(lang_stat);
             }
         }
+    }
+
+    /// Iterate over [`ProjectStats`](struct.ProjectStats.html)
+    pub fn iter(&self) -> Iter<'_, String, HashMap<&str, Stats>> {
+        self.stats.iter()
     }
 }
 
