@@ -21,7 +21,7 @@ mod util;
 use util::files_table;
 
 mod table;
-use table::{DiffStatsTable, FinalContributionsTable};
+use table::{CommitsTable, DiffStatsTable, FinalContributionsTable};
 
 fn construct_gd(matches: &ArgMatches) -> Result<GitDetective, Error> {
     let gd = match matches.subcommand() {
@@ -65,13 +65,25 @@ fn stats(matches: &ArgMatches, gd: &mut GitDetective) -> Result<(), Error> {
     Ok(())
 }
 
-fn list(matches: &ArgMatches, _gd: &GitDetective) -> Result<(), Error> {
-    // TODO: call functions
+fn list(matches: &ArgMatches, gd: &GitDetective) -> Result<(), Error> {
+    let dimensions = term_size::dimensions();
     if matches.is_present("commits") {
+        let commits: Vec<_> = gd.commits()?.collect();
+        println!("{}", CommitsTable::new(commits, dimensions));
     } else if matches.is_present("tags") {
     } else if matches.is_present("files") {
     } else if matches.is_present("branches") {
+        let branches = gd.branches()?;
+        for branch in branches {
+            if let Ok(name) = branch.name() {
+                println!("{}", name);
+            }
+        }
     } else {
+        let contributors = gd.contributors()?;
+        for contributor in contributors {
+            println!("{}", contributor);
+        }
     }
     Ok(())
 }
