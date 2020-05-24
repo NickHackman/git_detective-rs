@@ -46,30 +46,35 @@ pub fn clap() -> ArgMatches<'static> {
                     Arg::with_name("commits")
                         .short("c")
                         .long("commits")
-                        .help("List all commits"),
+                        .help("List all commits")
+                        .conflicts_with_all(&["tags", "contributors", "files", "branches"]),
                 )
                 .arg(
                     Arg::with_name("tags")
                         .short("t")
                         .long("tags")
-                        .help("List all tags"),
+                        .help("List all tags")
+                        .conflicts_with_all(&["commits", "contributors", "files", "branches"]),
                 )
                 .arg(
                     Arg::with_name("contributors")
                         .long("contributors")
-                        .help("List all contributors"),
+                        .help("List all contributors")
+                        .conflicts_with_all(&["commits", "tags", "files", "branches"]),
                 )
                 .arg(
                     Arg::with_name("files")
                         .short("f")
                         .long("files")
-                        .help("List all files and their statuses"),
+                        .help("List all files and their statuses")
+                        .conflicts_with_all(&["commits", "tags", "contributors", "branches"]),
                 )
                 .arg(
                     Arg::with_name("branches")
                         .short("b")
                         .long("branches")
-                        .help("List all branches"),
+                        .help("List all branches")
+                        .conflicts_with_all(&["commits", "tags", "contributors", "files"]),
                 ),
         )
         .subcommand(
@@ -79,19 +84,22 @@ pub fn clap() -> ArgMatches<'static> {
                 .arg(
                     Arg::with_name("final")
                         .long("final")
-                        .help("Statistics in the most recent commit by language and contributor"),
+                        .help("Statistics in the most recent commit by language and contributor")
+                        .conflicts_with_all(&["files", "difference"]),
                 )
                 .arg(
                     Arg::with_name("files")
                         .short("f")
                         .long("files")
-                        .help("Files touched by contributor"),
+                        .help("Files touched by contributor")
+                        .conflicts_with_all(&["final", "difference"]),
                 )
                 .arg(
                     Arg::with_name("difference")
                         .short("d")
                         .long("diff")
-                        .help("Insertion/Deletions by contributor"),
+                        .help("Insertion/Deletions by contributor")
+                        .conflicts_with_all(&["files", "difference"]),
                 )
                 .arg(
                     Arg::with_name("name")

@@ -46,28 +46,27 @@ fn run(matches: ArgMatches) -> Result<(), Error> {
 
 fn stats(matches: &ArgMatches, gd: &mut GitDetective) -> Result<(), Error> {
     let _name = matches.value_of("name");
-    if matches.is_present("final") {
-        let final_contribs = gd.final_contributions()?;
-        final_table(final_contribs);
-    }
     if matches.is_present("files") {
         let files = gd.files_contributed_to()?;
         println!("{:#?}", files);
-    }
-    if matches.is_present("difference") {
+    } else if matches.is_present("difference") {
         let diff_stats = gd.diff_stats()?;
         diff_table(diff_stats);
+    } else {
+        let final_contribs = gd.final_contributions()?;
+        final_table(final_contribs);
     }
     Ok(())
 }
 
 fn list(matches: &ArgMatches, _gd: &GitDetective) -> Result<(), Error> {
     // TODO: call functions
-    if matches.is_present("commits") {}
-    if matches.is_present("tags") {}
-    if matches.is_present("contributors") {}
-    if matches.is_present("files") {}
-    if matches.is_present("branches") {}
+    if matches.is_present("commits") {
+    } else if matches.is_present("tags") {
+    } else if matches.is_present("files") {
+    } else if matches.is_present("branches") {
+    } else {
+    }
     Ok(())
 }
 
