@@ -38,7 +38,6 @@ fn run(matches: ArgMatches) -> Result<(), Error> {
         ("list", Some(list_args)) => Ok(list(list_args, &gd)?),
         ("statistics", Some(stats_args)) => Ok(stats(stats_args, &mut gd)?),
         ("clone", _) => Ok(()),
-        ("checkout", Some(checkout_args)) => Ok(checkout(checkout_args, &gd)?),
         _ => unreachable!(),
     }
 }
@@ -80,11 +79,6 @@ fn list(matches: &ArgMatches, gd: &GitDetective) -> Result<(), Error> {
             println!("{}", contributor);
         }
     }
-    Ok(())
-}
-
-// TODO: implement
-fn checkout(_matches: &ArgMatches, _gd: &GitDetective) -> Result<(), Error> {
     Ok(())
 }
 

@@ -95,30 +95,5 @@ pub fn clap() -> ArgMatches<'static> {
                         .help("Name of contributor to filter by"),
                 ),
         )
-        .subcommand(
-            SubCommand::with_name("checkout")
-                .about("Checkout a branch, commit, or tag")
-                .arg(
-                    Arg::with_name("branch")
-                        .short("b")
-                        .long("branch")
-                        .help("Checkout a branch")
-                        .conflicts_with_all(&["tag", "commit"]),
-                )
-                .arg(
-                    Arg::with_name("tag")
-                        .short("t")
-                        .long("tag")
-                        .help("Checkout a tag")
-                        .conflicts_with_all(&["branch", "commit"]),
-                )
-                .arg(
-                    Arg::with_name("commit")
-                        .short("c")
-                        .long("commit")
-                        .help("Checkout a commit")
-                        .conflicts_with_all(&["branch", "tag"]),
-                ),
-        )
         .get_matches()
 }
