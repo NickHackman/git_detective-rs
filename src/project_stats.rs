@@ -1,4 +1,4 @@
-use std::collections::{hash_map::Entry, HashMap};
+use std::collections::{hash_map::Entry, hash_map::Iter, HashMap};
 use std::ops::AddAssign;
 
 use crate::stats::Stats;
@@ -48,6 +48,11 @@ impl ProjectStats {
         )
     }
 
+    /// Check whether [`ProjectStats`](struct.ProjectStats.html) is empty
+    pub fn is_empty(&self) -> bool {
+        self.stats.is_empty()
+    }
+
     /// Get contributions by name broken down by language
     pub fn contribs_by_name<S: AsRef<str>>(
         &self,
@@ -86,6 +91,11 @@ impl ProjectStats {
                 vacant.insert(lang_stat);
             }
         }
+    }
+
+    /// Iterate over [`ProjectStats`](struct.ProjectStats.html)
+    pub fn iter(&self) -> Iter<'_, String, HashMap<&str, Stats>> {
+        self.stats.iter()
     }
 }
 
