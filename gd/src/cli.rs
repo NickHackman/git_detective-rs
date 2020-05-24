@@ -81,13 +81,6 @@ pub fn clap() -> ArgMatches<'static> {
                         .conflicts_with_all(&["files", "difference"]),
                 )
                 .arg(
-                    Arg::with_name("files")
-                        .short("f")
-                        .long("files")
-                        .help("Files touched by contributor")
-                        .conflicts_with_all(&["final", "difference"]),
-                )
-                .arg(
                     Arg::with_name("difference")
                         .short("d")
                         .long("diff")

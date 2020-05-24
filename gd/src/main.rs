@@ -17,11 +17,8 @@ use git_detective::{Error, GitDetective};
 mod cli;
 use cli::clap;
 
-mod util;
-use util::files_table;
-
 mod table;
-use table::{CommitsTable, DiffStatsTable, FinalContributionsTable};
+use table::{CommitsTable, DiffStatsTable, FinalContributionsTable, TagsTable};
 
 fn construct_gd(matches: &ArgMatches) -> Result<GitDetective, Error> {
     let gd = match matches.subcommand() {
@@ -49,10 +46,7 @@ fn run(matches: ArgMatches) -> Result<(), Error> {
 fn stats(matches: &ArgMatches, gd: &mut GitDetective) -> Result<(), Error> {
     let _name = matches.value_of("name");
     let dimensions = term_size::dimensions();
-    if matches.is_present("files") {
-        let files = gd.files_contributed_to()?;
-        files_table(files);
-    } else if matches.is_present("difference") {
+    if matches.is_present("difference") {
         let diff_stats = gd.diff_stats()?;
         println!("{}", DiffStatsTable::new(diff_stats, dimensions));
     } else {
@@ -71,6 +65,8 @@ fn list(matches: &ArgMatches, gd: &GitDetective) -> Result<(), Error> {
         let commits: Vec<_> = gd.commits()?.collect();
         println!("{}", CommitsTable::new(commits, dimensions));
     } else if matches.is_present("tags") {
+        let tags = gd.tags()?;
+        println!("{}", TagsTable::new(tags, dimensions));
     } else if matches.is_present("branches") {
         let branches = gd.branches()?;
         for branch in branches {
@@ -88,7 +84,7 @@ fn list(matches: &ArgMatches, gd: &GitDetective) -> Result<(), Error> {
 }
 
 // TODO: implement
-fn checkout(matches: &ArgMatches, _gd: &GitDetective) -> Result<(), Error> {
+fn checkout(_matches: &ArgMatches, _gd: &GitDetective) -> Result<(), Error> {
     Ok(())
 }
 

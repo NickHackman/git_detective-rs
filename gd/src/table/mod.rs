@@ -6,3 +6,6 @@ pub use diff_stats::DiffStatsTable;
 
 pub(crate) mod commits;
 pub use commits::CommitsTable;
+
+pub(crate) mod tags;
+pub use tags::TagsTable;
