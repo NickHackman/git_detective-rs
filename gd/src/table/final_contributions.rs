@@ -87,7 +87,7 @@ impl fmt::Display for FinalContributionsTable {
             self.line_separator(f)?;
             self.row(f, "Total", &total)?;
             self.line_separator(f)?;
-            writeln!(f, "")?;
+            writeln!(f)?;
         }
         Ok(())
     }

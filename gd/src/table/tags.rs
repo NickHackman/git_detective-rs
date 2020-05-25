@@ -72,7 +72,7 @@ impl<'tag> fmt::Display for TagsTable<'_> {
             self.row(f, &tag)?;
         }
         self.line_separator(f)?;
-        writeln!(f, "")?;
+        writeln!(f)?;
         Ok(())
     }
 }

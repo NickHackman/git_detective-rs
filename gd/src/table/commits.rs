@@ -128,7 +128,7 @@ impl<'commit> fmt::Display for CommitsTable<'_> {
             self.row(f, &commit)?;
         }
         self.line_separator(f)?;
-        writeln!(f, "")?;
+        writeln!(f)?;
         Ok(())
     }
 }
