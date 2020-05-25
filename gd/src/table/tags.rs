@@ -27,12 +27,12 @@ impl<'tag> TagsTable<'tag> {
             Some(tagger) => {
                 let long_date = tagger.date().to_string();
                 let date = long_date[..long_date.len() - 4].to_string();
-                let tagger = tagger.name().unwrap_or(String::new());
+                let tagger = tagger.name().unwrap_or_default();
                 (tagger, date)
             }
             None => (String::new(), String::new()),
         };
-        let name = tag.name().unwrap_or(String::new());
+        let name = tag.name().unwrap_or_default();
         writeln!(
             f,
             "{:<width$} {:^width$} {:^width$}",
