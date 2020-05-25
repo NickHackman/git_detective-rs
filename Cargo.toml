@@ -2,6 +2,9 @@
 name = "git_detective"
 version = "0.1.0"
 authors = ["NickHackman <snickhackman@gmail.com>"]
+travis-ci = { repository = "https://github.com/NickHackman/git_detective-rs", branch = "development" }
+coveralls = { repository = "https://github.com/NickHackman/git_detective-rs", branch = "development", service = "github" }
+is-it-maintained-open-issues = { repository = "https://github.com/NickHackman/git_detective-rs" }
 edition = "2018"
 
 [dependencies]
