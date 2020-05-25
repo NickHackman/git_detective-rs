@@ -23,4 +23,5 @@ script:
   - cargo fmt -- --check
 
 after_success:
+  - cd ..
   - cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID --exclude-files gd/**/*
