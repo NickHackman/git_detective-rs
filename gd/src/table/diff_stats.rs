@@ -81,7 +81,7 @@ impl fmt::Display for DiffStatsTable {
             self.row(f, &author, diff_stats)?;
         }
         self.line_separator(f)?;
-        writeln!(f, "")?;
+        writeln!(f)?;
         Ok(())
     }
 }

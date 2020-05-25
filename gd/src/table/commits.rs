@@ -32,7 +32,7 @@ impl<'commit> CommitsTable<'commit> {
     }
 
     // Check to see if `SHORT_ID_LEN` is long enough for uniquness
-    fn unique_short_ids(commits: &Vec<Commit<'_>>) -> bool {
+    fn unique_short_ids(commits: &[Commit<'_>]) -> bool {
         for (index, commit) in commits.iter().enumerate() {
             for (i, c) in commits.iter().enumerate() {
                 if index != i
@@ -68,14 +68,14 @@ impl<'commit> CommitsTable<'commit> {
             .chars()
             .take(self.id_length)
             .collect();
-        let author = commit.author().name().unwrap_or(String::new());
-        let committer = commit.committer().name().unwrap_or(String::new());
+        let author = commit.author().name().unwrap_or_default();
+        let committer = commit.committer().name().unwrap_or_default();
         let long_date = commit.date().to_string();
         let no_tmz_date = &long_date[..long_date.len() - 4];
         let mut summary = commit
             .summary()
-            .unwrap_or(Ok(String::new()))
-            .unwrap_or(String::new());
+            .unwrap_or_else(|| Ok(String::new()))
+            .unwrap_or_default();
         if summary.len() > self.separator_length / ITEMS {
             let mut truncated_summary: String = summary
                 .chars()
@@ -128,7 +128,7 @@ impl<'commit> fmt::Display for CommitsTable<'_> {
             self.row(f, &commit)?;
         }
         self.line_separator(f)?;
-        writeln!(f, "")?;
+        writeln!(f)?;
         Ok(())
     }
 }
