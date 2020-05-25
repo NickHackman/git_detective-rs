@@ -15,11 +15,12 @@ rust:
   - stable
 
 script:
-  - cargo clippy
+  - cargo clippy -- -D warnings
   - cargo fmt -- --check
   - cargo test -v
-  - cargo clippy gd/
-  - cargo fmt gd/ -- --check
+  - cd gd/
+  - cargo clippy -- -D warnings
+  - cargo fmt -- --check
 
 after_success:
   - cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID --exclude-files gd/**/*
