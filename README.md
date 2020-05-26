@@ -6,8 +6,9 @@
   </p>
 
   <p>
-    <a href="https://travis-ci.org/NickHackman/Git-Detective"><img src="https://travis-ci.org/NickHackman/Git-Detective.svg?branch=development" alt="Build Status"/> </a>
-    <a href="https://coveralls.io/github/NickHackman/Git-Detective?branch=development"><img src="https://coveralls.io/repos/github/NickHackman/Git-Detective/badge.svg?branch=development" alt="Coverage Status"/> </a>
+    <a href="https://travis-ci.org/NickHackman/git_detective-rs"><img src="https://travis-ci.org/NickHackman/git_detective-rs.svg?branch=development" alt="Build Status"/> </a>
+    <a href='https://coveralls.io/github/NickHackman/git_detective-rs?branch=development'><img src='https://coveralls.io/repos/github/NickHackman/git_detective-rs/badge.svg?branch=development' alt='Coverage Status' /></a>
+
   </p>
 </div>
 
